@@ -31,7 +31,7 @@ class HorizontalTaskCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(18),
           boxShadow: [
             BoxShadow(
-              color: (isDone ? const Color(0xFF64748B) : colorTheme.solidBg).withOpacity(0.35),
+              color: (isDone ? const Color(0xFF64748B) : colorTheme.solidBg).withValues(alpha: 0.35),
               blurRadius: 10,
               offset: const Offset(0, 4),
             )
@@ -45,20 +45,42 @@ class HorizontalTaskCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: Colors.white, // Solid White Container
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    task.category,
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w800,
-                      color: isDone ? const Color(0xFF64748B) : colorTheme.solidBg,
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: Colors.white, // Solid White Container
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        task.category,
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          color: isDone ? const Color(0xFF64748B) : colorTheme.solidBg,
+                        ),
+                      ),
                     ),
-                  ),
+                    if (task.categories.length > 1) ...[
+                      const SizedBox(width: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: Colors.white24,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          '+${task.categories.length - 1}',
+                          style: const TextStyle(
+                            fontSize: 9,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
                 if (isDone)
                   const Icon(Icons.check_circle, size: 16, color: Colors.white)

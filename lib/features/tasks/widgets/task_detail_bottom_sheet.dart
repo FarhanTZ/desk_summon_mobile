@@ -24,7 +24,6 @@ class TaskDetailBottomSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDone = task.status == TaskStatus.done;
-    final colorTheme = CategoryColorTheme.fromCategory(task.category);
 
     return Container(
       padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
@@ -49,25 +48,35 @@ class TaskDetailBottomSheet extends StatelessWidget {
             ),
           ),
 
-          // Header: Category Badge & Status Pill
+          // Header: Category Badges & Status Pill
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: colorTheme.solidBg.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  task.category,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w800,
-                    color: colorTheme.solidBg,
-                  ),
+              Expanded(
+                child: Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: task.categories.map((cat) {
+                    final theme = CategoryColorTheme.fromCategory(cat);
+                    return Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: theme.solidBg.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        cat,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w800,
+                          color: theme.solidBg,
+                        ),
+                      ),
+                    );
+                  }).toList(),
                 ),
               ),
+              const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
@@ -122,24 +131,63 @@ class TaskDetailBottomSheet extends StatelessWidget {
             ),
             child: Column(
               children: [
-                Row(
-                  children: [
-                    const Icon(Icons.link_rounded, size: 18, color: AppColors.mutedText),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        task.url.isNotEmpty ? task.url : 'No browser link attached',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                if (task.urls.isNotEmpty) ...[
+                  ...task.urls.map((u) => Padding(
+                    padding: const EdgeInsets.only(bottom: 6.0),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.link_rounded, size: 18, color: AppColors.primaryBlue),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            u,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.primaryBlue,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  )),
+                ] else if (task.url.isNotEmpty) ...[
+                  Row(
+                    children: [
+                      const Icon(Icons.link_rounded, size: 18, color: AppColors.primaryBlue),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          task.url,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.primaryBlue,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ] else ...[
+                  const Row(
+                    children: [
+                      Icon(Icons.link_off_rounded, size: 18, color: AppColors.mutedText),
+                      SizedBox(width: 8),
+                      Text(
+                        'No browser links attached',
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: task.url.isNotEmpty ? AppColors.primaryBlue : AppColors.placeholderText,
+                          color: AppColors.placeholderText,
                         ),
                       ),
-                    ),
-                  ],
-                ),
+                    ],
+                  ),
+                ],
                 if (task.openVSCode) ...[
                   const Divider(height: 16, color: AppColors.border),
                   const Row(

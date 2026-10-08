@@ -42,8 +42,8 @@ class CircularFilterCard extends StatelessWidget {
               boxShadow: [
                 BoxShadow(
                   color: isSelected
-                      ? activeColor.withOpacity(0.25)
-                      : const Color(0xFF0F172A).withOpacity(0.02),
+                      ? activeColor.withValues(alpha: 0.25)
+                      : const Color(0xFF0F172A).withValues(alpha: 0.02),
                   blurRadius: isSelected ? 8 : 4,
                   offset: const Offset(0, 2),
                 )
@@ -56,7 +56,7 @@ class CircularFilterCard extends StatelessWidget {
                 height: 28,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: isSelected ? Colors.white.withOpacity(0.25) : bgColor,
+                  color: isSelected ? Colors.white.withValues(alpha: 0.25) : bgColor,
                 ),
                 child: Icon(
                   icon,

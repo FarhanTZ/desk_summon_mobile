@@ -21,32 +21,49 @@ class TaskFormPage extends StatefulWidget {
 class _TaskFormPageState extends State<TaskFormPage> {
   late TextEditingController _titleController;
   late TextEditingController _urlController;
-  late String _category;
+  late List<String> _selectedCategories;
   late bool _openVSCode;
+  bool _useTrello = true;
+  bool _useNotion = false;
 
   final Map<String, Map<String, dynamic>> _categoryPresets = {
-    'IELTS Prep': {
-      'icon': '📖',
-      'defaultUrl': 'https://ieltsliz.com',
-      'defaultVSCode': false,
-    },
     'Development': {
-      'icon': '💻',
+      'icon': Icons.code_rounded,
       'defaultUrl': '',
       'defaultVSCode': true,
     },
-    'Document': {
-      'icon': '📄',
+    'AI & Research': {
+      'icon': Icons.psychology_rounded,
+      'defaultUrl': 'https://chatgpt.com',
+      'defaultVSCode': false,
+    },
+    'Design & UI/UX': {
+      'icon': Icons.palette_rounded,
+      'defaultUrl': 'https://www.figma.com',
+      'defaultVSCode': false,
+    },
+    'Writing & Journal': {
+      'icon': Icons.edit_note_rounded,
       'defaultUrl': 'https://docs.google.com',
       'defaultVSCode': false,
     },
-    'Learning': {
-      'icon': '📺',
+    'Learning & Course': {
+      'icon': Icons.play_lesson_rounded,
+      'defaultUrl': 'https://www.youtube.com',
+      'defaultVSCode': false,
+    },
+    'Planning & Review': {
+      'icon': Icons.dashboard_customize_rounded,
+      'defaultUrl': '',
+      'defaultVSCode': false,
+    },
+    'Chill & Ambient': {
+      'icon': Icons.coffee_rounded,
       'defaultUrl': 'https://www.youtube.com/results?search_query=lofi+study+music',
       'defaultVSCode': false,
     },
     'Custom': {
-      'icon': '🔗',
+      'icon': Icons.layers_rounded,
       'defaultUrl': '',
       'defaultVSCode': false,
     },
@@ -57,9 +74,21 @@ class _TaskFormPageState extends State<TaskFormPage> {
     super.initState();
     final task = widget.taskToEdit;
     _titleController = TextEditingController(text: task?.title ?? '');
-    _urlController = TextEditingController(text: task?.url ?? '');
-    _category = task?.category ?? 'IELTS Prep';
+    
+    // Initial URLs joined by comma for editing
+    final initialUrls = task != null 
+        ? (task.urls.isNotEmpty ? task.urls.join(', ') : task.url)
+        : '';
+    _urlController = TextEditingController(text: initialUrls);
+    
+    _selectedCategories = task != null 
+        ? List<String>.from(task.categories)
+        : [];
     _openVSCode = task?.openVSCode ?? false;
+
+    // Detect if task was already using trello / notion
+    if (initialUrls.contains('trello.com')) _useTrello = true;
+    if (initialUrls.contains('notion.so')) _useNotion = true;
   }
 
   @override
@@ -69,14 +98,36 @@ class _TaskFormPageState extends State<TaskFormPage> {
     super.dispose();
   }
 
-  void _onCategorySelected(String cat) {
-    setState(() {
-      _category = cat;
-      final preset = _categoryPresets[cat]!;
-      if (widget.taskToEdit == null && _urlController.text.isEmpty) {
-        _urlController.text = preset['defaultUrl'] as String;
+  void _refreshUrls() {
+    final List<String> urls = [];
+    for (final cat in _selectedCategories) {
+      if (cat == 'Planning & Review') {
+        if (_useTrello) urls.add('https://trello.com');
+        if (_useNotion) urls.add('https://www.notion.so');
+      } else {
+        final defUrl = _categoryPresets[cat]?['defaultUrl'] as String? ?? '';
+        if (defUrl.isNotEmpty) urls.add(defUrl);
       }
-      _openVSCode = preset['defaultVSCode'] as bool;
+    }
+
+    final shouldEnableVSCode = _selectedCategories.any(
+      (c) => _categoryPresets[c]?['defaultVSCode'] == true,
+    );
+    _openVSCode = shouldEnableVSCode;
+
+    if (widget.taskToEdit == null) {
+      _urlController.text = urls.join(', ');
+    }
+  }
+
+  void _onCategoryToggled(String cat) {
+    setState(() {
+      if (_selectedCategories.contains(cat)) {
+        _selectedCategories.remove(cat);
+      } else {
+        _selectedCategories.add(cat);
+      }
+      _refreshUrls();
     });
   }
 
@@ -92,11 +143,17 @@ class _TaskFormPageState extends State<TaskFormPage> {
       return;
     }
 
+    final rawUrls = _urlController.text.split(',');
+    final cleanUrls = rawUrls
+        .map((u) => u.trim())
+        .where((u) => u.isNotEmpty)
+        .toList();
+
     final task = TaskModel(
       id: widget.taskToEdit?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
       title: title,
-      category: _category,
-      url: _urlController.text.trim(),
+      categories: _selectedCategories,
+      urls: cleanUrls,
       openVSCode: _openVSCode,
       status: widget.taskToEdit?.status ?? TaskStatus.todo,
     );
@@ -190,7 +247,7 @@ class _TaskFormPageState extends State<TaskFormPage> {
                   maxLines: 2,
                   style: const TextStyle(color: AppColors.bodyText, fontSize: 15, fontWeight: FontWeight.w600),
                   decoration: const InputDecoration(
-                    hintText: 'e.g., Practice IELTS Writing Task 2 with sample tests',
+                    hintText: 'e.g., Implement Authentication & Token Verification',
                     hintStyle: TextStyle(color: AppColors.placeholderText, fontSize: 14),
                     border: InputBorder.none,
                     contentPadding: EdgeInsets.all(16),
@@ -200,20 +257,36 @@ class _TaskFormPageState extends State<TaskFormPage> {
 
               const SizedBox(height: 24),
 
-              // Section 2: Workspace Category Selector
-              const Text(
-                'WORKSPACE CATEGORY',
-                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.mutedText, letterSpacing: 1.1),
+              // Section 2: Workspace Category Selector (Multi-Select)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'WORKSPACE WORKSPACES & TARGETS',
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.mutedText, letterSpacing: 1.1),
+                  ),
+                  Text(
+                    '${_selectedCategories.length} selected',
+                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.primaryBlue),
+                  ),
+                ],
               ),
               const SizedBox(height: 10),
               Wrap(
                 spacing: 10,
                 runSpacing: 10,
                 children: _categoryPresets.entries.map((entry) {
-                  final isSelected = _category == entry.key;
-                  return ChoiceChip(
-                    label: Text('${entry.value['icon']} ${entry.key}'),
+                  final isSelected = _selectedCategories.contains(entry.key);
+                  final iconData = entry.value['icon'] as IconData;
+                  return FilterChip(
+                    avatar: Icon(
+                      iconData,
+                      size: 16,
+                      color: isSelected ? Colors.white : AppColors.mutedText,
+                    ),
+                    label: Text(entry.key),
                     selected: isSelected,
+                    showCheckmark: false,
                     selectedColor: AppColors.primaryBlue,
                     backgroundColor: AppColors.surface,
                     labelStyle: TextStyle(
@@ -225,9 +298,9 @@ class _TaskFormPageState extends State<TaskFormPage> {
                       color: isSelected ? AppColors.primaryBlue : AppColors.border,
                       width: 1.2,
                     ),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    onSelected: (_) => _onCategorySelected(entry.key),
+                    onSelected: (_) => _onCategoryToggled(entry.key),
                   );
                 }).toList(),
               ),
@@ -240,6 +313,107 @@ class _TaskFormPageState extends State<TaskFormPage> {
                 style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.mutedText, letterSpacing: 1.1),
               ),
               const SizedBox(height: 10),
+
+              // Planning Tools Options (Muncul jika Planning & Review aktif)
+              if (_selectedCategories.contains('Planning & Review')) ...[
+                Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: const Color(0xFF0D9488).withValues(alpha: 0.3), width: 1.5),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Row(
+                        children: [
+                          Icon(Icons.dashboard_customize_rounded, size: 18, color: Color(0xFF0D9488)),
+                          SizedBox(width: 8),
+                          Text(
+                            'Planning Platforms',
+                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.titleText),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      const Text(
+                        'Select the tools you want to launch for this planning session:',
+                        style: TextStyle(fontSize: 12, color: AppColors.mutedText),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          // Trello Option
+                          Expanded(
+                            child: FilterChip(
+                              avatar: Icon(
+                                Icons.view_kanban_rounded,
+                                size: 16,
+                                color: _useTrello ? Colors.white : const Color(0xFF0D9488),
+                              ),
+                              label: const Text('Trello'),
+                              selected: _useTrello,
+                              showCheckmark: false,
+                              selectedColor: const Color(0xFF0D9488),
+                              backgroundColor: AppColors.background,
+                              labelStyle: TextStyle(
+                                color: _useTrello ? Colors.white : AppColors.bodyText,
+                                fontWeight: _useTrello ? FontWeight.w700 : FontWeight.w600,
+                                fontSize: 13,
+                              ),
+                              side: BorderSide(
+                                color: _useTrello ? const Color(0xFF0D9488) : AppColors.border,
+                              ),
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              onSelected: (val) {
+                                setState(() {
+                                  _useTrello = val;
+                                  _refreshUrls();
+                                });
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          // Notion Option
+                          Expanded(
+                            child: FilterChip(
+                              avatar: Icon(
+                                Icons.article_rounded,
+                                size: 16,
+                                color: _useNotion ? Colors.white : const Color(0xFF0D9488),
+                              ),
+                              label: const Text('Notion'),
+                              selected: _useNotion,
+                              showCheckmark: false,
+                              selectedColor: const Color(0xFF0D9488),
+                              backgroundColor: AppColors.background,
+                              labelStyle: TextStyle(
+                                color: _useNotion ? Colors.white : AppColors.bodyText,
+                                fontWeight: _useNotion ? FontWeight.w700 : FontWeight.w600,
+                                fontSize: 13,
+                              ),
+                              side: BorderSide(
+                                color: _useNotion ? const Color(0xFF0D9488) : AppColors.border,
+                              ),
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              onSelected: (val) {
+                                setState(() {
+                                  _useNotion = val;
+                                  _refreshUrls();
+                                });
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
 
               // Browser URL Input Card
               Container(
@@ -267,7 +441,7 @@ class _TaskFormPageState extends State<TaskFormPage> {
                       controller: _urlController,
                       style: const TextStyle(color: AppColors.bodyText, fontSize: 13),
                       decoration: InputDecoration(
-                        hintText: 'https://ieltsliz.com / https://docs.google.com',
+                        hintText: 'https://github.com / https://docs.google.com',
                         hintStyle: const TextStyle(color: AppColors.placeholderText, fontSize: 13),
                         filled: true,
                         fillColor: AppColors.background,
@@ -282,29 +456,31 @@ class _TaskFormPageState extends State<TaskFormPage> {
                 ),
               ),
 
-              const SizedBox(height: 12),
-
-              // VS Code Toggle Card
-              Container(
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.border),
-                ),
-                child: SwitchListTile(
-                  title: const Text(
-                    'Open VS Code on Laptop',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.titleText),
+              // VS Code Toggle Card (Hanya muncul jika kategori Development dipilih)
+              if (_selectedCategories.contains('Development')) ...[
+                const SizedBox(height: 12),
+                Container(
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: AppColors.border),
                   ),
-                  subtitle: const Text(
-                    'Automatically open your code editor workspace',
-                    style: TextStyle(fontSize: 12, color: AppColors.mutedText),
+                  child: SwitchListTile(
+                    secondary: const Icon(Icons.code_rounded, color: Color(0xFF7C3AED)),
+                    title: const Text(
+                      'Open VS Code on Laptop',
+                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.titleText),
+                    ),
+                    subtitle: const Text(
+                      'Automatically open your code editor workspace',
+                      style: TextStyle(fontSize: 12, color: AppColors.mutedText),
+                    ),
+                    value: _openVSCode,
+                    activeColor: const Color(0xFF7C3AED),
+                    onChanged: (val) => setState(() => _openVSCode = val),
                   ),
-                  value: _openVSCode,
-                  activeColor: AppColors.primaryBlue,
-                  onChanged: (val) => setState(() => _openVSCode = val),
                 ),
-              ),
+              ],
 
               const SizedBox(height: 36),
 

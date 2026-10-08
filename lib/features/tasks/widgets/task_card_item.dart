@@ -30,7 +30,7 @@ class TaskCardItem extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: (isDone ? const Color(0xFF64748B) : colorTheme.solidBg).withOpacity(0.3),
+              color: (isDone ? const Color(0xFF64748B) : colorTheme.solidBg).withValues(alpha: 0.3),
               blurRadius: 8,
               offset: const Offset(0, 3),
             )
@@ -60,6 +60,24 @@ class TaskCardItem extends StatelessWidget {
                           ),
                         ),
                       ),
+                      if (task.categories.length > 1) ...[
+                        const SizedBox(width: 4),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.white24,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            '+${task.categories.length - 1}',
+                            style: const TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ],
                       if (task.openVSCode) ...[
                         const SizedBox(width: 6),
                         Container(

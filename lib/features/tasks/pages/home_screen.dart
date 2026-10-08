@@ -31,32 +31,32 @@ class _HomeScreenState extends State<HomeScreen> {
   final List<TaskModel> _tasks = [
     TaskModel(
       id: '1',
-      title: 'Practice IELTS Writing & Reading Test',
-      category: 'IELTS Prep',
-      url: 'https://ieltsliz.com',
-      openVSCode: false,
-      status: TaskStatus.inProgress,
-    ),
-    TaskModel(
-      id: '2',
       title: 'Coding Backend Daemon & API Trigger',
       category: 'Development',
       url: 'https://github.com/FarhanTZ/desk-summon-backend',
       openVSCode: true,
+      status: TaskStatus.inProgress,
+    ),
+    TaskModel(
+      id: '2',
+      title: 'Explore LLM Prompting & Agent Workflows',
+      category: 'AI & Research',
+      url: 'https://chatgpt.com',
+      openVSCode: false,
       status: TaskStatus.todo,
     ),
     TaskModel(
       id: '3',
-      title: 'Write Documentation & Study Notes',
-      category: 'Document',
+      title: 'Daily Reflection & Auto-Diary Log',
+      category: 'Writing & Journal',
       url: 'https://docs.google.com',
       openVSCode: false,
       status: TaskStatus.done,
     ),
     TaskModel(
       id: '4',
-      title: 'Watch AI Tutorial / Lofi Focus Session',
-      category: 'Learning',
+      title: 'Deep Focus & Ambient Lofi Session',
+      category: 'Chill & Ambient',
       url: 'https://www.youtube.com/results?search_query=lofi+study+music',
       openVSCode: false,
       status: TaskStatus.todo,
@@ -86,8 +86,9 @@ class _HomeScreenState extends State<HomeScreen> {
   // Filter task list
   List<TaskModel> get _filteredTasks {
     return _tasks.where((task) {
-      final matchesSearch = task.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          task.category.toLowerCase().contains(_searchQuery.toLowerCase());
+      final matchesTitle = task.title.toLowerCase().contains(_searchQuery.toLowerCase());
+      final matchesCategories = task.categories.any((c) => c.toLowerCase().contains(_searchQuery.toLowerCase()));
+      final matchesSearch = matchesTitle || matchesCategories;
       if (!matchesSearch) return false;
 
       if (_selectedFilter == 'todo') return task.status == TaskStatus.todo;
@@ -287,7 +288,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       border: Border.all(color: AppColors.border),
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.titleText.withOpacity(0.04),
+                          color: AppColors.titleText.withValues(alpha: 0.04),
                           blurRadius: 6,
                         )
                       ],
@@ -341,7 +342,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   border: Border.all(color: AppColors.border),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.titleText.withOpacity(0.02),
+                      color: AppColors.titleText.withValues(alpha: 0.02),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     )

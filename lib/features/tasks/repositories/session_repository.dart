@@ -14,11 +14,14 @@ class SessionRepository {
 
   // Summon task to laptop workspace
   Future<void> summonWorkspace(TaskModel task) async {
+    final validUrls = task.urls.where((u) => u.trim().isNotEmpty).toList();
+    final combinedUrls = validUrls.isNotEmpty ? validUrls.join(',') : (task.url.isNotEmpty ? task.url : null);
+
     await _supabase.from('current_session').update({
       'state': 'FOCUSING',
       'topic': task.title,
       'project_path': task.openVSCode ? '.' : null,
-      'doc_url': task.url.isNotEmpty ? task.url : null,
+      'doc_url': combinedUrls,
       'started_at': DateTime.now().toUtc().toIso8601String(),
       'updated_at': DateTime.now().toUtc().toIso8601String(),
     }).eq('id', 1);

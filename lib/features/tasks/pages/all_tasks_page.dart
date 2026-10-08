@@ -63,8 +63,9 @@ class _AllTasksPageState extends State<AllTasksPage> {
 
   List<TaskModel> get _filteredTasks {
     return widget.tasks.where((task) {
-      final matchesSearch = task.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          task.category.toLowerCase().contains(_searchQuery.toLowerCase());
+      final matchesTitle = task.title.toLowerCase().contains(_searchQuery.toLowerCase());
+      final matchesCategories = task.categories.any((c) => c.toLowerCase().contains(_searchQuery.toLowerCase()));
+      final matchesSearch = matchesTitle || matchesCategories;
       if (!matchesSearch) return false;
 
       if (_selectedFilter == 'todo') return task.status == TaskStatus.todo;

@@ -39,7 +39,7 @@ class LaptopStatusCard extends StatelessWidget {
             border: Border.all(color: AppColors.border),
             boxShadow: [
               BoxShadow(
-                color: AppColors.titleText.withOpacity(0.02),
+                color: AppColors.titleText.withValues(alpha: 0.02),
                 blurRadius: 10,
                 offset: const Offset(0, 2),
               )
