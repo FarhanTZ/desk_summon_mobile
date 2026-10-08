@@ -71,13 +71,18 @@ class _HomeScreenState extends State<HomeScreen> {
     }).toList();
   }
 
-  // Filter habits for search
+  // Filter habits for today's schedule and search
   List<HabitModel> _filterHabits(List<HabitModel> habits) {
-    if (_searchQuery.isEmpty) return habits;
+    final now = DateTime.now();
     return habits.where((h) {
-      final matchesTitle = h.title.toLowerCase().contains(_searchQuery.toLowerCase());
-      final matchesCat = h.category.toLowerCase().contains(_searchQuery.toLowerCase());
-      return matchesTitle || matchesCat;
+      if (!h.isScheduledFor(now)) return false;
+
+      if (_searchQuery.isNotEmpty) {
+        final matchesTitle = h.title.toLowerCase().contains(_searchQuery.toLowerCase());
+        final matchesCat = h.category.toLowerCase().contains(_searchQuery.toLowerCase());
+        if (!matchesTitle && !matchesCat) return false;
+      }
+      return true;
     }).toList();
   }
 
@@ -310,6 +315,123 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  void _showAddOptionsSheet() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 20),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFCBD5E1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+            ),
+            const Text(
+              'Add New Activity',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: AppColors.titleText,
+              ),
+            ),
+            const SizedBox(height: 16),
+            InkWell(
+              onTap: () {
+                Navigator.pop(ctx);
+                _openHabitFormPage();
+              },
+              borderRadius: BorderRadius.circular(14),
+              child: Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF059669).withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: const Color(0xFF059669).withValues(alpha: 0.2)),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.repeat_rounded, color: Color(0xFF059669), size: 24),
+                    SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Daily Routine / Habit',
+                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.titleText),
+                          ),
+                          SizedBox(height: 2),
+                          Text(
+                            'Recurring daily schedule, workout, study, wake up...',
+                            style: TextStyle(fontSize: 12, color: AppColors.mutedText),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Icon(Icons.chevron_right_rounded, color: Color(0xFF059669)),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            InkWell(
+              onTap: () {
+                Navigator.pop(ctx);
+                _openTaskFormPage();
+              },
+              borderRadius: BorderRadius.circular(14),
+              child: Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryBlue.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: AppColors.primaryBlue.withValues(alpha: 0.2)),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.laptop_chromebook_rounded, color: AppColors.primaryBlue, size: 24),
+                    SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Workspace Task',
+                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.titleText),
+                          ),
+                          SizedBox(height: 2),
+                          Text(
+                            'Specific project focus, VS Code & URLs for laptop summon.',
+                            style: TextStyle(fontSize: 12, color: AppColors.mutedText),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Icon(Icons.chevron_right_rounded, color: AppColors.primaryBlue),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<List<HabitModel>>(
@@ -333,7 +455,7 @@ class _HomeScreenState extends State<HomeScreen> {
               backgroundColor: AppColors.background,
               drawer: CustomNavDrawer(onResetSession: _resetSession),
               floatingActionButton: FloatingActionButton(
-                onPressed: () => _openTaskFormPage(),
+                onPressed: _showAddOptionsSheet,
                 backgroundColor: AppColors.primaryBlue,
                 foregroundColor: Colors.white,
                 elevation: 3,
@@ -506,7 +628,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
                       const SizedBox(height: 24),
 
-                      // Workspace Tasks Header with See All
+                      // Workspace Tasks Header with + Add and See All
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -519,16 +641,46 @@ class _HomeScreenState extends State<HomeScreen> {
                               letterSpacing: -0.3,
                             ),
                           ),
-                          GestureDetector(
-                            onTap: () => _navigateToAllTasks(habits, allTasks),
-                            child: const Text(
-                              'See All',
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.primaryBlue,
+                          Row(
+                            children: [
+                              GestureDetector(
+                                onTap: () => _openTaskFormPage(),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primaryBlue.withValues(alpha: 0.12),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: const Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.add_rounded, size: 14, color: AppColors.primaryBlue),
+                                      SizedBox(width: 2),
+                                      Text(
+                                        'Add',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w800,
+                                          color: AppColors.primaryBlue,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
                               ),
-                            ),
+                              const SizedBox(width: 10),
+                              GestureDetector(
+                                onTap: () => _navigateToAllTasks(habits, allTasks),
+                                child: const Text(
+                                  'See All',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.primaryBlue,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),

@@ -314,9 +314,11 @@ class _AllTasksPageState extends State<AllTasksPage> {
         continue;
       }
 
-      // Date filter (Standalone work task harus cocok tanggal, Daily habit selalu muncul)
+      // Date filter (Standalone work task harus cocok tanggal, Daily habit harus aktif pada hari tersebut)
       if (_filterByDate && _selectedDate != null) {
-        if (!task.isDaily) {
+        if (task.isDaily) {
+          if (!task.isScheduledFor(_selectedDate!)) continue;
+        } else {
           if (task.scheduledDate == null) continue;
           if (!_isSameDay(task.scheduledDate!, _selectedDate!)) continue;
         }
@@ -359,6 +361,130 @@ class _AllTasksPageState extends State<AllTasksPage> {
     return list;
   }
 
+  void _showAddOptionsSheet() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 20),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFCBD5E1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+            ),
+            const Text(
+              'Add New Activity',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: AppColors.titleText,
+              ),
+            ),
+            const SizedBox(height: 16),
+            InkWell(
+              onTap: () {
+                Navigator.pop(ctx);
+                _openHabitForm(HabitModel(id: '', title: ''));
+              },
+              borderRadius: BorderRadius.circular(14),
+              child: Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF059669).withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: const Color(0xFF059669).withValues(alpha: 0.2)),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.repeat_rounded, color: Color(0xFF059669), size: 24),
+                    SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Daily Routine / Habit',
+                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.titleText),
+                          ),
+                          SizedBox(height: 2),
+                          Text(
+                            'Recurring daily schedule, workout, study, wake up...',
+                            style: TextStyle(fontSize: 12, color: AppColors.mutedText),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Icon(Icons.chevron_right_rounded, color: Color(0xFF059669)),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            InkWell(
+              onTap: () {
+                Navigator.pop(ctx);
+                _openTaskForm(
+                  TaskModel(
+                    id: '',
+                    title: '',
+                    openVSCode: true,
+                    scheduledDate: _selectedDate ?? DateTime.now(),
+                  ),
+                );
+              },
+              borderRadius: BorderRadius.circular(14),
+              child: Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryBlue.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: AppColors.primaryBlue.withValues(alpha: 0.2)),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.laptop_chromebook_rounded, color: AppColors.primaryBlue, size: 24),
+                    SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Workspace Task',
+                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.titleText),
+                          ),
+                          SizedBox(height: 2),
+                          Text(
+                            'Specific project focus, VS Code & URLs for laptop summon.',
+                            style: TextStyle(fontSize: 12, color: AppColors.mutedText),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Icon(Icons.chevron_right_rounded, color: AppColors.primaryBlue),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<List<HabitModel>>(
@@ -391,6 +517,15 @@ class _AllTasksPageState extends State<AllTasksPage> {
                 ),
                 actions: [
                   IconButton(
+                    icon: const Icon(
+                      Icons.add_circle_outline_rounded,
+                      color: AppColors.primaryBlue,
+                      size: 24,
+                    ),
+                    tooltip: 'Add Activity',
+                    onPressed: _showAddOptionsSheet,
+                  ),
+                  IconButton(
                     icon: Icon(
                       Icons.calendar_month_rounded,
                       color: _filterByDate ? AppColors.primaryBlue : AppColors.mutedText,
@@ -410,6 +545,7 @@ class _AllTasksPageState extends State<AllTasksPage> {
                       }
                     },
                   ),
+                  const SizedBox(width: 4),
                 ],
               ),
               body: SafeArea(

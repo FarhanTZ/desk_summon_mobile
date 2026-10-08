@@ -52,15 +52,45 @@ class DailyHabitsSection extends StatelessWidget {
                 ),
               ],
             ),
-            if (totalDaily > 0)
-              Text(
-                '$completedCount/$totalDaily Done',
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF059669),
+            Row(
+              children: [
+                if (totalDaily > 0)
+                  Text(
+                    '$completedCount/$totalDaily Done',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF059669),
+                    ),
+                  ),
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: onAddDaily,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF059669).withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.add_rounded, size: 14, color: Color(0xFF059669)),
+                        SizedBox(width: 2),
+                        Text(
+                          'Add',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFF059669),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-              ),
+              ],
+            ),
           ],
         ),
 

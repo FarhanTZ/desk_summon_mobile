@@ -45,6 +45,19 @@ class TaskModel {
 
   bool get hasWorkspace => openVSCode || urls.any((u) => u.trim().isNotEmpty);
 
+  bool isScheduledFor([DateTime? date]) {
+    final target = date ?? DateTime.now();
+    if (parentHabit != null) {
+      return parentHabit!.isScheduledFor(target);
+    }
+    if (scheduledDate != null) {
+      return scheduledDate!.year == target.year &&
+          scheduledDate!.month == target.month &&
+          scheduledDate!.day == target.day;
+    }
+    return true;
+  }
+
   bool isCompletedOn([DateTime? date]) {
     if (parentHabit != null) {
       return parentHabit!.isCompletedOn(date);
@@ -53,7 +66,12 @@ class TaskModel {
   }
 
   String? get formattedDate {
-    if (scheduledDate == null) return parentHabit != null ? 'Daily Routine' : null;
+    if (scheduledDate == null) {
+      if (parentHabit != null) {
+        return parentHabit!.repeatDaysSummary;
+      }
+      return null;
+    }
     return DateFormat('EEE, d MMM').format(scheduledDate!);
   }
 
