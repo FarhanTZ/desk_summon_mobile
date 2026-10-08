@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'habit_model.dart';
 
 enum TaskStatus { todo, inProgress, done }
 
 class TaskModel {
   final String id;
+  final String? habitId; // Foreign key ke daily_habits.id
   final String title;
   final List<String> categories;
   final List<String> urls;
@@ -14,8 +16,13 @@ class TaskModel {
   final TimeOfDay? endTime;
   TaskStatus status;
 
+  // Attached child/parent relations for UI convenience
+  HabitModel? parentHabit;
+  TaskModel? todayChildTask;
+
   TaskModel({
     required this.id,
+    this.habitId,
     required this.title,
     List<String>? categories,
     String? category,
@@ -25,26 +32,38 @@ class TaskModel {
     this.scheduledDate,
     this.startTime,
     this.endTime,
+    this.parentHabit,
+    this.todayChildTask,
     this.status = TaskStatus.todo,
   })  : categories = categories ?? (category != null && category.isNotEmpty ? [category] : []),
         urls = urls ?? (url != null && url.isNotEmpty ? [url] : []);
 
-  // Backward compatibility getters
-  String get category => categories.isNotEmpty ? categories.first : 'General';
+  bool get isDaily => habitId != null && scheduledDate == null;
+
+  String get category => categories.isNotEmpty ? categories.first : (parentHabit?.category ?? 'General');
   String get url => urls.isNotEmpty ? urls.first : '';
 
-  // Formatted date string helper (e.g., "Wed, 8 Oct")
+  bool get hasWorkspace => openVSCode || urls.any((u) => u.trim().isNotEmpty);
+
+  bool isCompletedOn([DateTime? date]) {
+    if (parentHabit != null) {
+      return parentHabit!.isCompletedOn(date);
+    }
+    return status == TaskStatus.done;
+  }
+
   String? get formattedDate {
-    if (scheduledDate == null) return null;
+    if (scheduledDate == null) return parentHabit != null ? 'Daily Routine' : null;
     return DateFormat('EEE, d MMM').format(scheduledDate!);
   }
 
-  // Formatted time range string helper (e.g., "09:00 - 11:30")
   String? get formattedTimeRange {
-    if (startTime == null) return null;
-    final startStr = formatTime(startTime!);
-    if (endTime != null) {
-      final endStr = formatTime(endTime!);
+    final sTime = startTime ?? parentHabit?.startTime;
+    final eTime = endTime ?? parentHabit?.endTime;
+    if (sTime == null) return null;
+    final startStr = formatTime(sTime);
+    if (eTime != null) {
+      final endStr = formatTime(eTime);
       return '$startStr - $endStr';
     }
     return startStr;
@@ -106,6 +125,7 @@ class TaskModel {
 
     return TaskModel(
       id: json['id']?.toString() ?? '',
+      habitId: json['habit_id']?.toString(),
       title: json['title']?.toString() ?? '',
       categories: parsedCategories,
       urls: parsedUrls,
@@ -126,11 +146,11 @@ class TaskModel {
       'scheduled_date': scheduledDate != null ? DateFormat('yyyy-MM-dd').format(scheduledDate!) : null,
       'start_time': startTime != null ? '${startTime!.hour.toString().padLeft(2, '0')}:${startTime!.minute.toString().padLeft(2, '0')}' : null,
       'end_time': endTime != null ? '${endTime!.hour.toString().padLeft(2, '0')}:${endTime!.minute.toString().padLeft(2, '0')}' : null,
+      'habit_id': habitId,
       'status': status.name,
       'updated_at': DateTime.now().toUtc().toIso8601String(),
     };
     if (includeId && id.isNotEmpty && !id.contains(RegExp(r'^[0-9]+$'))) {
-      // If it's a valid UUID, include it
       map['id'] = id;
     }
     return map;

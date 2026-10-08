@@ -113,8 +113,38 @@ class CategoryColorTheme {
           buttonBg: Colors.white,
           buttonText: Color(0xFF4338CA),
         );
-      case 'custom':
-      default:
+      case 'health & fitness':
+      case 'health':
+      case 'fitness':
+      case 'workout':
+      case 'exercise':
+        return const CategoryColorTheme(
+          solidBg: Color(0xFF0284C7), // Solid Sky Blue
+          textColor: Colors.white,
+          subTextColor: Color(0xFFBAE6FD),
+          badgeBg: Color(0xFF0369A1),
+          badgeText: Colors.white,
+          buttonBg: Colors.white,
+          buttonText: Color(0xFF0369A1),
+        );
+      case 'habit & routine':
+      case 'habit':
+      case 'routine':
+      case 'morning routine':
+      case 'daily':
+        return const CategoryColorTheme(
+          solidBg: Color(0xFF059669), // Solid Emerald
+          textColor: Colors.white,
+          subTextColor: Color(0xFFA7F3D0),
+          badgeBg: Color(0xFF047857),
+          badgeText: Colors.white,
+          buttonBg: Colors.white,
+          buttonText: Color(0xFF047857),
+        );
+      case 'home & lifestyle':
+      case 'home':
+      case 'lifestyle':
+      case 'clean':
         return const CategoryColorTheme(
           solidBg: Color(0xFFD97706), // Solid Amber / Orange
           textColor: Colors.white,
@@ -124,12 +154,40 @@ class CategoryColorTheme {
           buttonBg: Colors.white,
           buttonText: Color(0xFFB45309),
         );
+      case 'custom':
+      default:
+        return const CategoryColorTheme(
+          solidBg: Color(0xFF64748B), // Solid Slate Gray
+          textColor: Colors.white,
+          subTextColor: Color(0xFFE2E8F0),
+          badgeBg: Color(0xFF475569),
+          badgeText: Colors.white,
+          buttonBg: Colors.white,
+          buttonText: Color(0xFF475569),
+        );
     }
   }
 
   // Map kategori ke IconData Material Design (menghindari emoji)
   static IconData getCategoryIcon(String category) {
     switch (category.toLowerCase()) {
+      case 'health & fitness':
+      case 'health':
+      case 'fitness':
+      case 'workout':
+      case 'exercise':
+        return Icons.fitness_center_rounded;
+      case 'habit & routine':
+      case 'habit':
+      case 'routine':
+      case 'morning routine':
+      case 'daily':
+        return Icons.repeat_rounded;
+      case 'home & lifestyle':
+      case 'home':
+      case 'lifestyle':
+      case 'clean':
+        return Icons.cleaning_services_rounded;
       case 'development':
       case 'coding':
       case 'code':

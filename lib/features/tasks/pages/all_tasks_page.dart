@@ -13,6 +13,7 @@ class AllTasksPage extends StatefulWidget {
   final Function(TaskModel) onSummon;
   final Function(TaskModel) onEdit;
   final Function(TaskModel) onDelete;
+  final Function(TaskModel parentHabit)? onAttachChild;
 
   const AllTasksPage({
     super.key,
@@ -22,6 +23,7 @@ class AllTasksPage extends StatefulWidget {
     required this.onSummon,
     required this.onEdit,
     required this.onDelete,
+    this.onAttachChild,
   });
 
   @override
@@ -70,30 +72,69 @@ class _AllTasksPageState extends State<AllTasksPage> {
   }
 
   List<TaskModel> get _filteredTasks {
-    return widget.tasks.where((task) {
-      // Date filter
-      if (_filterByDate && _selectedDate != null) {
-        if (task.scheduledDate == null) {
-          // If task has no date, only show when filterByDate is off
-          return false;
+    final targetDate = _selectedDate ?? DateTime.now();
+
+    // 1. Kumpulkan semua child tasks yang punya habit_id untuk targetDate
+    final Map<String, TaskModel> childMap = {};
+    for (final t in widget.tasks) {
+      if (t.habitId != null && t.habitId!.isNotEmpty && t.parentHabit == null) {
+        if (t.scheduledDate != null && _isSameDay(t.scheduledDate!, targetDate)) {
+          childMap[t.habitId!] = t;
         }
-        if (!_isSameDay(task.scheduledDate!, _selectedDate!)) {
-          return false;
+      }
+    }
+
+    // 2. Filter top-level items (Daily Habits dan standalone Work Tasks yang tidak punya parent)
+    final list = <TaskModel>[];
+    for (final task in widget.tasks) {
+      // Lewati child task dari list utama (karena sudah di-embed di parent habitnya)
+      if (task.habitId != null && task.habitId!.isNotEmpty && task.parentHabit == null) {
+        continue;
+      }
+
+      // Date filter (Standalone work task harus cocok tanggal, Daily habit selalu muncul)
+      if (_filterByDate && _selectedDate != null) {
+        if (!task.isDaily) {
+          if (task.scheduledDate == null) continue;
+          if (!_isSameDay(task.scheduledDate!, _selectedDate!)) continue;
         }
       }
 
       // Search Query
-      final matchesTitle = task.title.toLowerCase().contains(_searchQuery.toLowerCase());
+      final child = childMap[task.id];
+      final matchesTitle = task.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+          (child != null && child.title.toLowerCase().contains(_searchQuery.toLowerCase()));
       final matchesCategories = task.categories.any((c) => c.toLowerCase().contains(_searchQuery.toLowerCase()));
       final matchesSearch = matchesTitle || matchesCategories;
-      if (!matchesSearch) return false;
+      if (!matchesSearch) continue;
 
-      // Status Filter
-      if (_selectedFilter == 'todo') return task.status == TaskStatus.todo;
-      if (_selectedFilter == 'inProgress') return task.status == TaskStatus.inProgress;
-      if (_selectedFilter == 'done') return task.status == TaskStatus.done;
-      return true;
-    }).toList();
+      // Status Filter (Daily habits check completion for the selected date)
+      final effectiveStatus = task.isDaily 
+          ? (task.isCompletedOn(_selectedDate) ? TaskStatus.done : TaskStatus.todo)
+          : task.status;
+
+      if (_selectedFilter == 'todo' && effectiveStatus != TaskStatus.todo) continue;
+      if (_selectedFilter == 'inProgress' && effectiveStatus != TaskStatus.inProgress) continue;
+      if (_selectedFilter == 'done' && effectiveStatus != TaskStatus.done) continue;
+
+      // Attach child task untuk tanggal yang dipilih ke dalam object parent habit
+      task.todayChildTask = child;
+      list.add(task);
+    }
+
+    // 3. Urutkan timeline terpadu berdasarkan jam (Start Time)
+    list.sort((a, b) {
+      if (a.startTime != null && b.startTime != null) {
+        final aMinutes = a.startTime!.hour * 60 + a.startTime!.minute;
+        final bMinutes = b.startTime!.hour * 60 + b.startTime!.minute;
+        return aMinutes.compareTo(bMinutes);
+      }
+      if (a.startTime != null) return -1;
+      if (b.startTime != null) return 1;
+      return 0;
+    });
+
+    return list;
   }
 
   @override
@@ -108,7 +149,7 @@ class _AllTasksPageState extends State<AllTasksPage> {
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
-          'All Tasks',
+          'All Tasks & Routine',
           style: TextStyle(
             color: AppColors.titleText,
             fontSize: 18,
@@ -155,7 +196,7 @@ class _AllTasksPageState extends State<AllTasksPage> {
                   onChanged: (val) => setState(() => _searchQuery = val),
                   style: const TextStyle(color: AppColors.bodyText, fontSize: 14),
                   decoration: const InputDecoration(
-                    hintText: 'Search all tasks...',
+                    hintText: 'Search tasks, routines, materials...',
                     hintStyle: TextStyle(color: AppColors.placeholderText, fontSize: 14),
                     prefixIcon: Icon(Icons.search, color: AppColors.mutedText, size: 20),
                     border: InputBorder.none,
@@ -180,12 +221,12 @@ class _AllTasksPageState extends State<AllTasksPage> {
 
               const SizedBox(height: 14),
 
-              // Status Filter Chips (All, To Do, In Progress, Done)
+              // Status Filter Chips (All Timeline, To Do, In Progress, Done)
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: Row(
                   children: [
-                    _buildChip('all', 'All Status'),
+                    _buildChip('all', 'All Timeline'),
                     const SizedBox(width: 8),
                     _buildChip('todo', 'To Do'),
                     const SizedBox(width: 8),
@@ -198,7 +239,7 @@ class _AllTasksPageState extends State<AllTasksPage> {
 
               const SizedBox(height: 16),
 
-              // Vertical Full List with Timeline & Time Tracking
+              // Unified Single Vertical Timeline with 2-Layer Embedded Cards
               Expanded(
                 child: _filteredTasks.isEmpty
                     ? Center(
@@ -208,7 +249,7 @@ class _AllTasksPageState extends State<AllTasksPage> {
                             const Icon(Icons.event_note_outlined, size: 48, color: AppColors.placeholderText),
                             const SizedBox(height: 12),
                             const Text(
-                              'No tasks found for this date',
+                              'No activities found for this date',
                               style: TextStyle(color: AppColors.mutedText, fontSize: 14, fontWeight: FontWeight.w600),
                             ),
                           ],
@@ -226,6 +267,12 @@ class _AllTasksPageState extends State<AllTasksPage> {
                             isLast: index == _filteredTasks.length - 1,
                             onTap: () => _openTaskDetailSheet(task),
                             onSummon: () => widget.onSummon(task),
+                            onToggleStatus: () => widget.onToggleStatus(task),
+                            onAttachChild: widget.onAttachChild != null
+                                ? () => widget.onAttachChild!(task)
+                                : null,
+                            onChildTap: (child) => widget.onEdit(child),
+                            onChildSummon: (child) => widget.onSummon(child),
                           );
                         },
                       ),

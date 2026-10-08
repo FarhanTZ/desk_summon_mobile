@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/category_colors.dart';
 import '../models/task_model.dart';
 
@@ -7,6 +8,10 @@ class TaskCardItem extends StatelessWidget {
   final bool isLoading;
   final VoidCallback onTap;
   final VoidCallback onSummon;
+  final VoidCallback? onToggleStatus;
+  final VoidCallback? onAttachChild; // Tambah child task ke daily habit
+  final Function(TaskModel)? onChildTap;
+  final Function(TaskModel)? onChildSummon;
   final bool showTimeline;
   final bool isFirst;
   final bool isLast;
@@ -17,6 +22,10 @@ class TaskCardItem extends StatelessWidget {
     required this.isLoading,
     required this.onTap,
     required this.onSummon,
+    this.onToggleStatus,
+    this.onAttachChild,
+    this.onChildTap,
+    this.onChildSummon,
     this.showTimeline = false,
     this.isFirst = false,
     this.isLast = false,
@@ -36,18 +45,113 @@ class TaskCardItem extends StatelessWidget {
     return (nowMinutes >= startMinutes && nowMinutes <= endMinutes) || task.status == TaskStatus.inProgress;
   }
 
+  // Dynamic tracking subtitle
+  String _getTimeTrackingSubtitle() {
+    if (task.status == TaskStatus.done) return 'Completed';
+    if (task.startTime == null) return 'No Time';
+
+    final now = DateTime.now();
+    final nowMinutes = now.hour * 60 + now.minute;
+    final startMinutes = task.startTime!.hour * 60 + task.startTime!.minute;
+    final endMinutes = task.endTime != null ? task.endTime!.hour * 60 + task.endTime!.minute : startMinutes + 60;
+
+    if (nowMinutes >= startMinutes && nowMinutes <= endMinutes) {
+      return 'Happening Now';
+    } else if (nowMinutes < startMinutes) {
+      final diff = startMinutes - nowMinutes;
+      final hours = diff ~/ 60;
+      final mins = diff % 60;
+      return hours > 0 ? 'Starts in ${hours}h ${mins}m' : 'Starts in ${mins}m';
+    } else {
+      final diff = nowMinutes - endMinutes;
+      final hours = diff ~/ 60;
+      final mins = diff % 60;
+      return hours > 0 ? 'Overdue by ${hours}h ${mins}m' : 'Overdue by ${mins}m';
+    }
+  }
+
+  Widget _buildTopRightTimeTracking(bool isDone) {
+    if (task.startTime == null) return const SizedBox.shrink();
+
+    final trackingText = _getTimeTrackingSubtitle();
+    final isHappeningNow = trackingText == 'Happening Now';
+    final isOverdue = trackingText.startsWith('Overdue');
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+      decoration: BoxDecoration(
+        color: isDone ? Colors.white12 : Colors.white24,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.schedule_rounded, size: 11, color: isDone ? Colors.white60 : Colors.white),
+              const SizedBox(width: 4),
+              Text(
+                task.formattedTimeRange ?? TaskModel.formatTime(task.startTime!),
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                  color: isDone ? Colors.white60 : Colors.white,
+                  letterSpacing: -0.1,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 1.5),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (isHappeningNow) ...[
+                Container(
+                  width: 5,
+                  height: 5,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF34D399),
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 3.5),
+              ],
+              Text(
+                trackingText,
+                style: TextStyle(
+                  fontSize: 9.5,
+                  fontWeight: isHappeningNow || isOverdue ? FontWeight.w800 : FontWeight.w600,
+                  color: isDone
+                      ? Colors.white54
+                      : isHappeningNow
+                          ? const Color(0xFF34D399)
+                          : isOverdue
+                              ? const Color(0xFFFCA5A5)
+                              : Colors.white70,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDone = task.status == TaskStatus.done;
     final colorTheme = CategoryColorTheme.fromCategory(task.category);
     final isActive = _isTaskActiveNow();
+    final childTask = task.todayChildTask;
 
     final cardContent = GestureDetector(
-      onTap: onTap, // Tap card opens Bottom Sheet detail
+      onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: isDone ? const Color(0xFF64748B) : colorTheme.solidBg, // Full Solid Color
+          color: isDone ? const Color(0xFF64748B) : colorTheme.solidBg,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
@@ -60,18 +164,43 @@ class TaskCardItem extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Row 1: Badges (Left) & Schedule Time with Smart Status (Top-Right)
+            // Row 1: Category Badges & Time Tracker
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Flexible(
+                Expanded(
                   child: SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
                     physics: const BouncingScrollPhysics(),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
+                        if (task.isDaily) ...[
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF059669),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.repeat_rounded, size: 11, color: Colors.white),
+                                SizedBox(width: 3),
+                                Text(
+                                  'Daily Habit',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w800,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 5),
+                        ],
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
@@ -105,7 +234,7 @@ class TaskCardItem extends StatelessWidget {
                             ),
                           ),
                         ],
-                        if (task.openVSCode) ...[
+                        if (task.openVSCode && childTask == null) ...[
                           const SizedBox(width: 6),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -136,7 +265,7 @@ class TaskCardItem extends StatelessWidget {
 
             const SizedBox(height: 10),
 
-            // Row 2: Title Task
+            // Row 2: Title Task / Habit
             Text(
               task.title,
               style: TextStyle(
@@ -148,7 +277,150 @@ class TaskCardItem extends StatelessWidget {
               ),
             ),
 
-            // Row 3: Bottom Meta Info (Date/URL) & Quick Summon Action Button
+            // LAYER 2: CHILD WORKSPACE TASK EMBEDDED INSIDE DAILY HABIT CARD
+            if (task.isDaily) ...[
+              const SizedBox(height: 10),
+              if (childTask != null) ...[
+                // Embedded Child Workspace Card
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.18),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.white24),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.bolt_rounded, size: 14, color: Color(0xFFFBBF24)), // Amber bolt
+                              const SizedBox(width: 4),
+                              Text(
+                                "Today's Workspace Focus",
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w800,
+                                  color: Colors.white.withValues(alpha: 0.9),
+                                  letterSpacing: 0.2,
+                                ),
+                              ),
+                            ],
+                          ),
+                          if (childTask.openVSCode)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF7C3AED),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: const Text(
+                                'VS Code',
+                                style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: Colors.white),
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        childTask.title,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
+                      if (childTask.url.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            const Icon(Icons.link_rounded, size: 11, color: Colors.white70),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                childTask.url,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(fontSize: 10, color: Colors.white70),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                      const SizedBox(height: 8),
+                      // Action buttons inside Child Task
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          GestureDetector(
+                            onTap: () => onChildTap?.call(childTask),
+                            child: const Text(
+                              'Edit Target',
+                              style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: Colors.white70),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          GestureDetector(
+                            onTap: isLoading ? null : () => onChildSummon?.call(childTask),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.bolt_rounded, size: 13, color: Color(0xFF1E293B)),
+                                  SizedBox(width: 2),
+                                  Text(
+                                    'Summon Workspace',
+                                    style: TextStyle(
+                                      fontSize: 10.5,
+                                      fontWeight: FontWeight.w800,
+                                      color: Color(0xFF1E293B),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ] else if (onAttachChild != null) ...[
+                // Quick Attach Target Button if no child task exists for today
+                GestureDetector(
+                  onTap: onAttachChild,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.white30, style: BorderStyle.solid),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.add_circle_outline_rounded, size: 13, color: Colors.white),
+                        SizedBox(width: 5),
+                        Text(
+                          "+ Set today's workspace topic",
+                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ],
+
+            // Row 3: Bottom Meta Info & Quick Check Action Button
             const SizedBox(height: 10),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -169,7 +441,7 @@ class TaskCardItem extends StatelessWidget {
                           ),
                         ),
                       ],
-                      if (task.url.isNotEmpty) ...[
+                      if (!task.isDaily && task.url.isNotEmpty) ...[
                         if (task.formattedDate != null) ...[
                           const SizedBox(width: 6),
                           Text('•', style: TextStyle(color: isDone ? Colors.white54 : Colors.white70, fontSize: 11)),
@@ -189,43 +461,84 @@ class TaskCardItem extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
 
-                // Compact Modern Summon Button (Pill with Bolt Icon)
-                GestureDetector(
-                  onTap: isLoading ? null : onSummon,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: isDone ? Colors.white38 : Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.1),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
+                // Main Card Action Button (Summon for non-daily, Check button for daily)
+                if (!task.isDaily) ...[
+                  if (task.hasWorkspace)
+                    GestureDetector(
+                      onTap: isLoading ? null : onSummon,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: isDone ? Colors.white38 : Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.1),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
                         ),
-                      ],
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.bolt_rounded,
+                              size: 14,
+                              color: isDone ? const Color(0xFF475569) : colorTheme.solidBg,
+                            ),
+                            const SizedBox(width: 3),
+                            Text(
+                              'Summon',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w800,
+                                color: isDone ? const Color(0xFF475569) : colorTheme.solidBg,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.bolt_rounded,
-                          size: 14,
-                          color: isDone ? const Color(0xFF475569) : colorTheme.solidBg,
-                        ),
-                        const SizedBox(width: 3),
-                        Text(
-                          'Summon',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w800,
+                ] else ...[
+                  // Daily Habit Check / Completed Button
+                  GestureDetector(
+                    onTap: onToggleStatus,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: isDone ? Colors.white38 : Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.1),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            isDone ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
+                            size: 14,
                             color: isDone ? const Color(0xFF475569) : colorTheme.solidBg,
                           ),
-                        ),
-                      ],
+                          const SizedBox(width: 4),
+                          Text(
+                            isDone ? 'Done' : 'Check',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                              color: isDone ? const Color(0xFF475569) : colorTheme.solidBg,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
+                ],
               ],
             ),
           ],
@@ -259,122 +572,49 @@ class TaskCardItem extends StatelessWidget {
                 ),
                 // Timeline Dot (Titik indikator aktif / normal)
                 Positioned(
-                  top: 18,
-                  child: Container(
+                  top: 24,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
                     width: isActive ? 16 : 12,
                     height: isActive ? 16 : 12,
                     decoration: BoxDecoration(
-                      color: isActive
-                          ? const Color(0xFF2563EB)
-                          : (isDone ? const Color(0xFF10B981) : const Color(0xFF94A3B8)),
+                      color: isDone
+                          ? const Color(0xFF64748B)
+                          : isActive
+                              ? AppColors.primaryBlue
+                              : colorTheme.solidBg,
                       shape: BoxShape.circle,
                       border: Border.all(
                         color: Colors.white,
-                        width: isActive ? 3 : 2,
+                        width: 2.5,
                       ),
-                      boxShadow: isActive
-                          ? [
-                              BoxShadow(
-                                color: const Color(0xFF2563EB).withValues(alpha: 0.6),
-                                blurRadius: 6,
-                                spreadRadius: 2,
-                              )
-                            ]
-                          : null,
+                      boxShadow: [
+                        BoxShadow(
+                          color: (isActive ? AppColors.primaryBlue : colorTheme.solidBg).withValues(alpha: 0.45),
+                          blurRadius: isActive ? 8 : 4,
+                          spreadRadius: isActive ? 2 : 0,
+                        ),
+                      ],
                     ),
+                    child: isDone
+                        ? const Center(
+                            child: Icon(Icons.check, size: 7, color: Colors.white),
+                          )
+                        : null,
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(width: 8),
-          // Main Task Card
+          const SizedBox(width: 4),
+
+          // Main Card Content
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.only(bottom: 14.0),
+              padding: const EdgeInsets.only(bottom: 12.0),
               child: cardContent,
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTopRightTimeTracking(bool isDone) {
-    if (task.formattedTimeRange == null) return const SizedBox.shrink();
-
-    final now = DateTime.now();
-    final taskDate = task.scheduledDate ?? now;
-    final isToday = now.year == taskDate.year && now.month == taskDate.month && now.day == taskDate.day;
-
-    String? statusSubtitle;
-    Color pillBg = Colors.black.withValues(alpha: 0.18);
-    Color borderColor = Colors.white24;
-    Color timeTextColor = isDone ? Colors.white60 : Colors.white;
-
-    if (isToday && task.startTime != null && !isDone) {
-      final nowMinutes = now.hour * 60 + now.minute;
-      final startMinutes = task.startTime!.hour * 60 + task.startTime!.minute;
-      final endMinutes = task.endTime != null ? task.endTime!.hour * 60 + task.endTime!.minute : startMinutes + 60;
-
-      if (nowMinutes < startMinutes) {
-        final diff = startMinutes - nowMinutes;
-        final hours = diff ~/ 60;
-        final mins = diff % 60;
-        statusSubtitle = hours > 0 ? '${hours}h ${mins}m left' : '${mins}m left';
-      } else if (nowMinutes >= startMinutes && nowMinutes <= endMinutes) {
-        statusSubtitle = 'Now';
-        pillBg = Colors.white;
-        borderColor = Colors.white;
-        timeTextColor = const Color(0xFF0F172A);
-      } else {
-        final overdue = nowMinutes - endMinutes;
-        final hours = overdue ~/ 60;
-        final mins = overdue % 60;
-        statusSubtitle = hours > 0 ? '+${hours}h late' : '+${mins}m late';
-        pillBg = const Color(0xFFEF4444).withValues(alpha: 0.9);
-        borderColor = const Color(0xFFEF4444);
-      }
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-      decoration: BoxDecoration(
-        color: pillBg,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: borderColor, width: 0.8),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.schedule_rounded, size: 11, color: timeTextColor),
-          const SizedBox(width: 4),
-          Text(
-            task.formattedTimeRange!,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              color: timeTextColor,
-            ),
-          ),
-          if (statusSubtitle != null) ...[
-            const SizedBox(width: 5),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-              decoration: BoxDecoration(
-                color: statusSubtitle == 'Now' ? const Color(0xFF2563EB) : Colors.black26,
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Text(
-                statusSubtitle,
-                style: TextStyle(
-                  fontSize: 9,
-                  fontWeight: FontWeight.w800,
-                  color: statusSubtitle == 'Now' ? Colors.white : Colors.white70,
-                ),
-              ),
-            ),
-          ],
         ],
       ),
     );

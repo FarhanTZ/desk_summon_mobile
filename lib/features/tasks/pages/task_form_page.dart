@@ -83,7 +83,6 @@ class _TaskFormPageState extends State<TaskFormPage> {
     final task = widget.taskToEdit;
     _titleController = TextEditingController(text: task?.title ?? '');
     
-    // Initial URLs joined by comma for editing
     final initialUrls = task != null 
         ? (task.urls.isNotEmpty ? task.urls.join(', ') : task.url)
         : '';
@@ -91,15 +90,14 @@ class _TaskFormPageState extends State<TaskFormPage> {
     
     _selectedCategories = task != null 
         ? List<String>.from(task.categories)
-        : [];
-    _openVSCode = task?.openVSCode ?? false;
+        : ['Development'];
+    _openVSCode = task?.openVSCode ?? true;
 
     // Schedule state initialization
     _selectedDate = task?.scheduledDate ?? DateTime.now();
     _startTime = task?.startTime;
     _endTime = task?.endTime;
 
-    // Detect if task was already using trello / notion
     if (initialUrls.contains('trello.com')) _useTrello = true;
     if (initialUrls.contains('notion.so')) _useNotion = true;
   }
@@ -157,18 +155,24 @@ class _TaskFormPageState extends State<TaskFormPage> {
   Future<void> _pickStartTime() async {
     final picked = await CustomTimePickerBottomSheet.show(
       context,
-      initialTime: _startTime ?? TimeOfDay.now(),
+      initialTime: _startTime ?? const TimeOfDay(hour: 9, minute: 0),
       title: 'Select Start Time',
     );
     if (picked != null) {
-      setState(() => _startTime = picked);
+      setState(() {
+        _startTime = picked;
+        if (_endTime == null) {
+          int endHour = (picked.hour + 1) % 24;
+          _endTime = TimeOfDay(hour: endHour, minute: picked.minute);
+        }
+      });
     }
   }
 
   Future<void> _pickEndTime() async {
     final picked = await CustomTimePickerBottomSheet.show(
       context,
-      initialTime: _endTime ?? (_startTime ?? TimeOfDay.now()),
+      initialTime: _endTime ?? const TimeOfDay(hour: 10, minute: 0),
       title: 'Select End Time',
     );
     if (picked != null) {
@@ -181,8 +185,8 @@ class _TaskFormPageState extends State<TaskFormPage> {
     if (title.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please enter a task name or topic'),
-          behavior: SnackBarBehavior.floating,
+          content: Text('Please enter task topic'),
+          backgroundColor: AppColors.dangerRed,
         ),
       );
       return;
@@ -194,15 +198,20 @@ class _TaskFormPageState extends State<TaskFormPage> {
         .where((u) => u.isNotEmpty)
         .toList();
 
+    final categories = _selectedCategories.isNotEmpty 
+        ? _selectedCategories 
+        : ['Development'];
+
     final task = TaskModel(
-      id: widget.taskToEdit?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+      id: widget.taskToEdit?.id ?? '',
       title: title,
-      categories: _selectedCategories,
+      categories: categories,
       urls: cleanUrls,
       openVSCode: _openVSCode,
       scheduledDate: _selectedDate,
       startTime: _startTime,
       endTime: _endTime,
+      habitId: widget.taskToEdit?.habitId,
       status: widget.taskToEdit?.status ?? TaskStatus.todo,
     );
 
@@ -217,7 +226,7 @@ class _TaskFormPageState extends State<TaskFormPage> {
         backgroundColor: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Delete Task?', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-        content: const Text('Are you sure you want to delete this target task?'),
+        content: const Text('Are you sure you want to delete this workspace task?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
@@ -230,8 +239,8 @@ class _TaskFormPageState extends State<TaskFormPage> {
               elevation: 0,
             ),
             onPressed: () {
-              Navigator.pop(ctx); // Close dialog
-              Navigator.pop(context); // Close TaskFormPage
+              Navigator.pop(ctx);
+              Navigator.pop(context);
               widget.onDelete?.call();
             },
             child: const Text('Delete', style: TextStyle(fontWeight: FontWeight.bold)),
@@ -243,7 +252,8 @@ class _TaskFormPageState extends State<TaskFormPage> {
 
   @override
   Widget build(BuildContext context) {
-    final isEditing = widget.taskToEdit != null;
+    final isEditing = widget.taskToEdit != null && widget.taskToEdit!.id.isNotEmpty;
+    final isChildTask = widget.taskToEdit?.habitId != null;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -255,7 +265,9 @@ class _TaskFormPageState extends State<TaskFormPage> {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          isEditing ? 'Edit Target Task' : 'New Target Task',
+          isEditing 
+              ? (isChildTask ? 'Edit Habit Workspace Target' : 'Edit Workspace Task') 
+              : (isChildTask ? "Set Today's Habit Target" : 'New Workspace Task'),
           style: const TextStyle(
             color: AppColors.titleText,
             fontSize: 18,
@@ -278,9 +290,33 @@ class _TaskFormPageState extends State<TaskFormPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Section 1: Task Topic Name
+              if (isChildTask) ...[
+                Container(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF059669).withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFF059669).withValues(alpha: 0.2)),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.link_rounded, size: 18, color: Color(0xFF059669)),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          "This workspace task is linked as today's focus under your Daily Habit routine.",
+                          style: TextStyle(fontSize: 12, color: Color(0xFF059669), fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+
+              // Section 1: Title Input
               const Text(
-                'TASK TOPIC / TARGET',
+                'WORKSPACE TASK TOPIC / TARGET',
                 style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.mutedText, letterSpacing: 1.1),
               ),
               const SizedBox(height: 8),
@@ -295,7 +331,7 @@ class _TaskFormPageState extends State<TaskFormPage> {
                   maxLines: 2,
                   style: const TextStyle(color: AppColors.bodyText, fontSize: 15, fontWeight: FontWeight.w600),
                   decoration: const InputDecoration(
-                    hintText: 'e.g., Implement Authentication & Token Verification',
+                    hintText: 'e.g., Belajar Golang Concurrency, Slicing UI Dashboard Flutter',
                     hintStyle: TextStyle(color: AppColors.placeholderText, fontSize: 14),
                     border: InputBorder.none,
                     contentPadding: EdgeInsets.all(16),
@@ -305,7 +341,7 @@ class _TaskFormPageState extends State<TaskFormPage> {
 
               const SizedBox(height: 20),
 
-              // Section 2: Schedule (Date & Time)
+              // Section 2: Schedule & Time
               const Text(
                 'SCHEDULE & TIME ESTIMATION',
                 style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.mutedText, letterSpacing: 1.1),
@@ -361,6 +397,7 @@ class _TaskFormPageState extends State<TaskFormPage> {
                       ),
                     ),
                     const Divider(height: 20, color: AppColors.border),
+
                     // Time Range Row (Start Time & End Time)
                     Row(
                       children: [
@@ -443,12 +480,12 @@ class _TaskFormPageState extends State<TaskFormPage> {
 
               const SizedBox(height: 24),
 
-              // Section 3: Workspace Category Selector (Multi-Select)
+              // Section 3: Categories
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Text(
-                    'WORKSPACE WORKSPACES & TARGETS',
+                    'WORKSPACE CATEGORIES',
                     style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.mutedText, letterSpacing: 1.1),
                   ),
                   Text(
@@ -464,6 +501,7 @@ class _TaskFormPageState extends State<TaskFormPage> {
                 children: _categoryPresets.entries.map((entry) {
                   final isSelected = _selectedCategories.contains(entry.key);
                   final iconData = entry.value['icon'] as IconData;
+
                   return FilterChip(
                     avatar: Icon(
                       iconData,
@@ -491,9 +529,8 @@ class _TaskFormPageState extends State<TaskFormPage> {
                 }).toList(),
               ),
 
+              // Section 4: Laptop Workspace Environment
               const SizedBox(height: 24),
-
-              // Section 3: Workspace Environment Config
               const Text(
                 'WORKSPACE ENVIRONMENT (LAPTOP)',
                 style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.mutedText, letterSpacing: 1.1),
@@ -642,7 +679,7 @@ class _TaskFormPageState extends State<TaskFormPage> {
                 ),
               ),
 
-              // VS Code Toggle Card (Hanya muncul jika kategori Development dipilih)
+              // VS Code Toggle Card
               if (_selectedCategories.contains('Development')) ...[
                 const SizedBox(height: 12),
                 Container(
@@ -678,7 +715,7 @@ class _TaskFormPageState extends State<TaskFormPage> {
                   onPressed: _saveTask,
                   icon: const Icon(Icons.check, size: 20),
                   label: Text(
-                    isEditing ? 'Save Changes' : 'Create Target Task',
+                    isEditing ? 'Save Changes' : 'Create Workspace Task',
                     style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, letterSpacing: 0.5),
                   ),
                   style: ElevatedButton.styleFrom(
