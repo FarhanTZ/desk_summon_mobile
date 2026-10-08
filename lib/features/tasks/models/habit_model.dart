@@ -33,6 +33,34 @@ class HabitModel {
     return completedDates.contains(dateStr);
   }
 
+  int get streak {
+    if (completedDates.isEmpty) return 0;
+    final now = DateTime.now();
+    var checkDate = DateTime(now.year, now.month, now.day);
+    var count = 0;
+
+    if (isScheduledFor(checkDate) && isCompletedOn(checkDate)) {
+      count++;
+      checkDate = checkDate.subtract(const Duration(days: 1));
+    } else {
+      checkDate = checkDate.subtract(const Duration(days: 1));
+    }
+
+    for (var i = 0; i < 365; i++) {
+      if (isScheduledFor(checkDate)) {
+        if (isCompletedOn(checkDate)) {
+          count++;
+          checkDate = checkDate.subtract(const Duration(days: 1));
+        } else {
+          break;
+        }
+      } else {
+        checkDate = checkDate.subtract(const Duration(days: 1));
+      }
+    }
+    return count;
+  }
+
   String get repeatDaysSummary {
     if (repeatDays.isEmpty || repeatDays.length == 7) return 'Every Day';
     final set = repeatDays.toSet();

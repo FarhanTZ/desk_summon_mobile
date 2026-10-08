@@ -230,6 +230,31 @@ class TaskCardItem extends StatelessWidget {
                             ),
                           ),
                         ],
+                        if (task.parentHabit != null && task.parentHabit!.streak > 0) ...[
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.22),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.local_fire_department_rounded, size: 11, color: Color(0xFFFDE68A)),
+                                const SizedBox(width: 2),
+                                Text(
+                                  '${task.parentHabit!.streak}d streak',
+                                  style: const TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w800,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),

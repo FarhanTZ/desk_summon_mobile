@@ -275,15 +275,51 @@ class _DailyHabitsSectionState extends State<DailyHabitsSection> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    habit.title,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: isDone ? AppColors.mutedText : AppColors.titleText,
-                      decoration: isDone ? TextDecoration.lineThrough : null,
-                      decorationColor: AppColors.mutedText,
-                    ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          habit.title,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: isDone ? AppColors.mutedText : AppColors.titleText,
+                            decoration: isDone ? TextDecoration.lineThrough : null,
+                            decorationColor: AppColors.mutedText,
+                          ),
+                        ),
+                      ),
+                      if (habit.streak > 0) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFEF3C7),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: const Color(0xFFFDE68A)),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.local_fire_department_rounded,
+                                size: 11,
+                                color: Color(0xFFD97706),
+                              ),
+                              const SizedBox(width: 2),
+                              Text(
+                                '${habit.streak}d',
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w800,
+                                  color: Color(0xFFB45309),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                   if (habit.startTime != null) ...[
                     const SizedBox(height: 2),

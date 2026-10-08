@@ -247,6 +247,79 @@ class TaskDetailBottomSheet extends StatelessWidget {
             ),
           ],
 
+          // Habit Streak & Consistency Information (Only for Daily Habits)
+          if (isHabit && task.parentHabit != null) ...[
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: const Color(0xFF059669).withValues(alpha: 0.06),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: const Color(0xFF059669).withValues(alpha: 0.2)),
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF59E0B).withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(Icons.local_fire_department_rounded, size: 20, color: Color(0xFFD97706)),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '${task.parentHabit!.streak} Hari Beruntun',
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.titleText,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              task.parentHabit!.streak > 0
+                                  ? 'Streak aktif! Pertahankan konsistensi rutinitas harian.'
+                                  : 'Mulai kebiasaan hari ini untuk membentuk streak!',
+                              style: const TextStyle(
+                                fontSize: 11,
+                                color: AppColors.mutedText,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const Divider(height: 20, color: AppColors.border),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _buildHabitStat(
+                        label: 'Total Selesai',
+                        value: '${task.parentHabit!.completedDates.length} Kali',
+                        icon: Icons.check_circle_outline_rounded,
+                      ),
+                      _buildHabitStat(
+                        label: 'Jadwal Hari',
+                        value: task.parentHabit!.repeatDays.length == 7
+                            ? 'Setiap Hari'
+                            : '${task.parentHabit!.repeatDays.length} Hari/Mgg',
+                        icon: Icons.event_repeat_rounded,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+
           const SizedBox(height: 20),
 
           // Action 1: Summon Desk (Only for Workspace Tasks)
@@ -377,6 +450,30 @@ class TaskDetailBottomSheet extends StatelessWidget {
           ],
         ],
       ),
+    );
+  }
+
+  Widget _buildHabitStat({required String label, required String value, required IconData icon}) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 16, color: const Color(0xFF059669)),
+        const SizedBox(width: 8),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: AppColors.mutedText),
+            ),
+            const SizedBox(height: 1),
+            Text(
+              value,
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: AppColors.titleText),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }

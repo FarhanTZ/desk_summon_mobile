@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../diary/pages/diary_history_page.dart';
 import '../../settings/pages/settings_page.dart';
@@ -6,6 +7,7 @@ import '../models/habit_model.dart';
 import '../pages/all_tasks_page.dart';
 import '../repositories/habit_repository.dart';
 import '../repositories/session_repository.dart';
+import '../utils/streak_calculator.dart';
 
 class CustomNavDrawer extends StatelessWidget {
   final VoidCallback? onResetSession;
@@ -124,7 +126,7 @@ class CustomNavDrawer extends StatelessWidget {
 
                     const SizedBox(height: 12),
 
-                    // Daily Habit Progress Bar
+                    // Daily Habit Progress & Streak Consistency Tracker
                     StreamBuilder<List<HabitModel>>(
                       stream: habitRepository.getHabitsStream(),
                       builder: (context, snapshot) {
@@ -134,24 +136,27 @@ class CustomNavDrawer extends StatelessWidget {
                         final totalDaily = scheduledHabits.length;
                         final completedCount = scheduledHabits.where((h) => h.isCompletedOn(now)).length;
                         final progressRatio = totalDaily > 0 ? (completedCount / totalDaily) : 0.0;
+                        final summary = StreakCalculator.getSummary(habits);
+                        final todayStr = DateFormat('yyyy-MM-dd').format(now);
 
                         return Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                           decoration: BoxDecoration(
                             color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(14),
                             border: Border.all(color: AppColors.border),
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
+                              // 1. Today's Routines Progress
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
                                   const Text(
                                     "Today's Routines",
                                     style: TextStyle(
-                                      fontSize: 11,
+                                      fontSize: 11.5,
                                       fontWeight: FontWeight.w700,
                                       color: AppColors.titleText,
                                     ),
@@ -182,6 +187,133 @@ class CustomNavDrawer extends StatelessWidget {
                                   ),
                                 ),
                               ),
+
+                              if (habits.isNotEmpty) ...[
+                                const Divider(height: 16, color: AppColors.border),
+
+                                // 2. Streak Badge & Weekly Consistency Score
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        const Icon(
+                                          Icons.local_fire_department_rounded,
+                                          color: Color(0xFFD97706),
+                                          size: 16,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          '${summary.currentStreak}d Streak',
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w800,
+                                            color: AppColors.titleText,
+                                          ),
+                                        ),
+                                        if (summary.currentStreak > 0) ...[
+                                          const SizedBox(width: 5),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFF059669).withValues(alpha: 0.12),
+                                              borderRadius: BorderRadius.circular(4),
+                                            ),
+                                            child: const Text(
+                                              'ACTIVE',
+                                              style: TextStyle(
+                                                fontSize: 8,
+                                                fontWeight: FontWeight.w900,
+                                                color: Color(0xFF059669),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ],
+                                    ),
+                                    Text(
+                                      '${summary.weeklyScore.toInt()}% Week',
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w800,
+                                        color: AppColors.primaryBlue,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+
+                                const SizedBox(height: 8),
+
+                                // 3. Mini 7-Day Weekday Dot Matrix
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: summary.weekDaysStatus.entries.map((entry) {
+                                    final date = entry.key;
+                                    final rate = entry.value;
+                                    final dateStr = DateFormat('yyyy-MM-dd').format(date);
+                                    final isToday = dateStr == todayStr;
+                                    final isPast = date.isBefore(DateTime(now.year, now.month, now.day));
+                                    final dayLabel = DateFormat('E').format(date).substring(0, 1);
+
+                                    Color dotBg;
+                                    Widget innerWidget;
+
+                                    if (rate >= 1.0) {
+                                      dotBg = const Color(0xFF059669);
+                                      innerWidget = const Icon(Icons.check_rounded, color: Colors.white, size: 10);
+                                    } else if (rate > 0.0) {
+                                      dotBg = AppColors.primaryBlue;
+                                      innerWidget = Container(
+                                        width: 4,
+                                        height: 4,
+                                        decoration: const BoxDecoration(
+                                          color: Colors.white,
+                                          shape: BoxShape.circle,
+                                        ),
+                                      );
+                                    } else if (isPast) {
+                                      dotBg = const Color(0xFFE2E8F0);
+                                      innerWidget = Container(
+                                        width: 3,
+                                        height: 3,
+                                        decoration: const BoxDecoration(
+                                          color: Color(0xFF94A3B8),
+                                          shape: BoxShape.circle,
+                                        ),
+                                      );
+                                    } else {
+                                      dotBg = const Color(0xFFF1F5F9);
+                                      innerWidget = const SizedBox();
+                                    }
+
+                                    return Column(
+                                      children: [
+                                        Text(
+                                          dayLabel,
+                                          style: TextStyle(
+                                            fontSize: 9.5,
+                                            fontWeight: isToday ? FontWeight.w900 : FontWeight.w600,
+                                            color: isToday ? AppColors.primaryBlue : AppColors.mutedText,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Container(
+                                          width: 22,
+                                          height: 22,
+                                          decoration: BoxDecoration(
+                                            color: dotBg,
+                                            shape: BoxShape.circle,
+                                            border: isToday
+                                                ? Border.all(color: AppColors.primaryBlue, width: 1.5)
+                                                : null,
+                                          ),
+                                          child: Center(child: innerWidget),
+                                        ),
+                                      ],
+                                    );
+                                  }).toList(),
+                                ),
+                              ],
                             ],
                           ),
                         );
