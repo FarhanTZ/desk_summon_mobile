@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../diary/pages/diary_history_page.dart';
 import '../../settings/pages/settings_page.dart';
+import '../repositories/session_repository.dart';
 
 class CustomNavDrawer extends StatelessWidget {
   final VoidCallback? onResetSession;
@@ -10,103 +11,372 @@ class CustomNavDrawer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final sessionRepository = SessionRepository();
+
     return Drawer(
       backgroundColor: AppColors.surface,
+      elevation: 0,
       child: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // 1. User Profile Header Card
             Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: Row(
-                children: [
-                  Container(
-                    width: 52,
-                    height: 52,
-                    decoration: const BoxDecoration(
-                      color: AppColors.softBlueTint,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Icons.person, color: AppColors.primaryBlue, size: 28),
-                  ),
-                  const SizedBox(width: 14),
-                  const Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Farhan',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.titleText,
+              padding: const EdgeInsets.fromLTRB(18, 16, 18, 14),
+              child: Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 46,
+                      height: 46,
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryBlue.withValues(alpha: 0.12),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: AppColors.primaryBlue.withValues(alpha: 0.25),
+                          width: 1.5,
                         ),
                       ),
-                      Text(
-                        'Focus & Accountability',
-                        style: TextStyle(fontSize: 12, color: AppColors.mutedText),
+                      child: const Center(
+                        child: Text(
+                          'F',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w900,
+                            color: AppColors.primaryBlue,
+                          ),
+                        ),
                       ),
-                    ],
-                  )
-                ],
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Text(
+                                'Farhan',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.titleText,
+                                  letterSpacing: -0.2,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: AppColors.primaryBlue.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: const Text(
+                                  'PRO',
+                                  style: TextStyle(
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w900,
+                                    color: AppColors.primaryBlue,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 3),
+                          Row(
+                            children: [
+                              Container(
+                                width: 7,
+                                height: 7,
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFF059669),
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(width: 5),
+                              const Text(
+                                'AI Sync Connected',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFF059669),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-            const Divider(color: AppColors.border),
-            ListTile(
-              leading: const Icon(Icons.dashboard_outlined, color: AppColors.primaryBlue),
-              title: const Text(
-                'Workspace Dashboard',
-                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-              ),
-              onTap: () => Navigator.pop(context),
+
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 18),
+              child: Divider(color: AppColors.border, height: 1),
             ),
-            ListTile(
-              leading: const Icon(Icons.menu_book_rounded, color: AppColors.primaryBlue),
-              title: const Text(
-                'Auto-Diary History',
-                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: AppColors.titleText),
-              ),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const DiaryHistoryPage()),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.settings_outlined, color: AppColors.primaryBlue),
-              title: const Text(
-                'Settings',
-                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: AppColors.titleText),
-              ),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const SettingsPage()),
-                );
-              },
-            ),
-            const Spacer(),
-            Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: Row(
+
+            const SizedBox(height: 14),
+
+            // 2. Navigation Items List
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                physics: const BouncingScrollPhysics(),
                 children: [
-                  Container(
-                    width: 8,
-                    height: 8,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFF10B981),
-                      shape: BoxShape.circle,
+                  // Section: Workspace & Tracking
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                    child: Text(
+                      'WORKSPACE & TRACKING',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.mutedText,
+                        letterSpacing: 0.6,
+                      ),
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  const Text(
-                    'KaryaFlow v1.0.0',
-                    style: TextStyle(fontSize: 12, color: AppColors.mutedText, fontWeight: FontWeight.w600),
+                  const SizedBox(height: 4),
+                  _DrawerPillItem(
+                    icon: Icons.dashboard_rounded,
+                    iconBgColor: AppColors.primaryBlue.withValues(alpha: 0.12),
+                    iconColor: AppColors.primaryBlue,
+                    title: 'Workspace Dashboard',
+                    subtitle: 'Active tasks, habits & overview',
+                    onTap: () => Navigator.pop(context),
+                  ),
+                  const SizedBox(height: 4),
+                  _DrawerPillItem(
+                    icon: Icons.auto_stories_rounded,
+                    iconBgColor: const Color(0xFF6366F1).withValues(alpha: 0.12),
+                    iconColor: const Color(0xFF6366F1),
+                    title: 'Auto-Diary History',
+                    subtitle: 'AI daily logs & work summaries',
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const DiaryHistoryPage()),
+                      );
+                    },
+                  ),
+
+                  const SizedBox(height: 18),
+
+                  // Section: Preferences
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                    child: Text(
+                      'PREFERENCES',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.mutedText,
+                        letterSpacing: 0.6,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  _DrawerPillItem(
+                    icon: Icons.tune_rounded,
+                    iconBgColor: const Color(0xFF64748B).withValues(alpha: 0.12),
+                    iconColor: const Color(0xFF64748B),
+                    title: 'Settings',
+                    subtitle: 'Notification audio & preferences',
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const SettingsPage()),
+                      );
+                    },
                   ),
                 ],
               ),
+            ),
+
+            // 3. Live Laptop Workstation Status Card at Bottom
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 8, 14, 16),
+              child: StreamBuilder<List<Map<String, dynamic>>>(
+                stream: sessionRepository.getSessionStream(),
+                builder: (context, snapshot) {
+                  final data = (snapshot.hasData && snapshot.data!.isNotEmpty)
+                      ? snapshot.data!.first
+                      : null;
+                  final state = (data?['state'] ?? 'IDLE').toString().toUpperCase();
+                  final isFocusing = state == 'FOCUSING';
+                  final topic = data?['topic']?.toString() ?? 'Ready to summon task';
+
+                  return Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: isFocusing
+                          ? const Color(0xFFECFDF5)
+                          : const Color(0xFFF1F5F9),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: isFocusing
+                            ? const Color(0xFFA7F3D0)
+                            : const Color(0xFFE2E8F0),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: isFocusing
+                                ? const Color(0xFF059669).withValues(alpha: 0.15)
+                                : AppColors.primaryBlue.withValues(alpha: 0.15),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            isFocusing
+                                ? Icons.laptop_chromebook_rounded
+                                : Icons.power_settings_new_rounded,
+                            size: 18,
+                            color: isFocusing
+                                ? const Color(0xFF059669)
+                                : AppColors.primaryBlue,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Text(
+                                    isFocusing ? 'Active Laptop Focus' : 'Laptop Workstation',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w800,
+                                      color: isFocusing
+                                          ? const Color(0xFF065F46)
+                                          : AppColors.titleText,
+                                    ),
+                                  ),
+                                  const Spacer(),
+                                  Container(
+                                    width: 6,
+                                    height: 6,
+                                    decoration: BoxDecoration(
+                                      color: isFocusing
+                                          ? const Color(0xFF059669)
+                                          : const Color(0xFF94A3B8),
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                isFocusing ? topic : 'Standby & ready for summon',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: isFocusing
+                                      ? const Color(0xFF047857)
+                                      : AppColors.mutedText,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DrawerPillItem extends StatelessWidget {
+  final IconData icon;
+  final Color iconBgColor;
+  final Color iconColor;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  const _DrawerPillItem({
+    required this.icon,
+    required this.iconBgColor,
+    required this.iconColor,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      splashColor: AppColors.primaryBlue.withValues(alpha: 0.08),
+      highlightColor: AppColors.primaryBlue.withValues(alpha: 0.04),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: iconBgColor,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: iconColor, size: 20),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.titleText,
+                      letterSpacing: -0.2,
+                    ),
+                  ),
+                  const SizedBox(height: 1),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppColors.mutedText,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(
+              Icons.chevron_right_rounded,
+              color: Color(0xFFCBD5E1),
+              size: 20,
             ),
           ],
         ),
