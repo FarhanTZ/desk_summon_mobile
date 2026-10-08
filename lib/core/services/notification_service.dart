@@ -14,11 +14,11 @@ class NotificationService {
   bool _isInitialized = false;
 
   // Channel IDs
-  static const String channelRoutinesId = 'karyaflow_routines';
+  static const String channelRoutinesId = 'karyaflow_routines_v2';
   static const String channelRoutinesName = 'Daily Routine Reminders';
   static const String channelRoutinesDesc = 'Notifications for upcoming daily habits and routines';
 
-  static const String channelAccountabilityId = 'karyaflow_accountability';
+  static const String channelAccountabilityId = 'karyaflow_accountability_v2';
   static const String channelAccountabilityName = 'AI Accountability Alerts';
   static const String channelAccountabilityDesc = 'Realtime alerts for laptop focus sessions and accountability checks';
 
@@ -71,6 +71,7 @@ class NotificationService {
           importance: Importance.max,
           enableVibration: true,
           playSound: true,
+          sound: RawResourceAndroidNotificationSound('karyaflow_chime'),
         );
 
         const AndroidNotificationChannel accountabilityChannel = AndroidNotificationChannel(
@@ -80,6 +81,7 @@ class NotificationService {
           importance: Importance.max,
           enableVibration: true,
           playSound: true,
+          sound: RawResourceAndroidNotificationSound('karyaflow_focus'),
         );
 
         await androidImplementation.createNotificationChannel(routineChannel);
@@ -152,6 +154,9 @@ class NotificationService {
       channelDescription: channelRoutinesDesc,
       importance: Importance.max,
       priority: Priority.high,
+      playSound: true,
+      sound: RawResourceAndroidNotificationSound('karyaflow_chime'),
+      enableVibration: true,
       icon: '@mipmap/launcher_icon',
       category: AndroidNotificationCategory.reminder,
     );
@@ -160,6 +165,7 @@ class NotificationService {
       presentAlert: true,
       presentBadge: true,
       presentSound: true,
+      sound: 'karyaflow_chime.wav',
       categoryIdentifier: 'routine_category',
     );
 
@@ -207,17 +213,25 @@ class NotificationService {
   }
 
   /// Show an instant AI Accountability / Session alert
-  Future<void> showAccountabilityAlert({
+  Future<bool> showAccountabilityAlert({
     required String title,
     required String body,
     String? payload,
   }) async {
+    if (!_isInitialized) {
+      await init();
+    }
+    await requestPermissions();
+
     const androidDetails = AndroidNotificationDetails(
       channelAccountabilityId,
       channelAccountabilityName,
       channelDescription: channelAccountabilityDesc,
       importance: Importance.max,
       priority: Priority.high,
+      playSound: true,
+      sound: RawResourceAndroidNotificationSound('karyaflow_focus'),
+      enableVibration: true,
       icon: '@mipmap/launcher_icon',
       category: AndroidNotificationCategory.status,
     );
@@ -226,6 +240,7 @@ class NotificationService {
       presentAlert: true,
       presentBadge: true,
       presentSound: true,
+      sound: 'karyaflow_focus.wav',
     );
 
     const notificationDetails = NotificationDetails(
@@ -234,21 +249,27 @@ class NotificationService {
     );
 
     final notifId = DateTime.now().millisecondsSinceEpoch % 100000;
-    await _notificationsPlugin.show(
-      notifId,
-      title,
-      body,
-      notificationDetails,
-      payload: payload,
-    );
+    try {
+      await _notificationsPlugin.show(
+        notifId,
+        title,
+        body,
+        notificationDetails,
+        payload: payload,
+      );
+      return true;
+    } catch (e) {
+      debugPrint('Error showing instant notification: $e');
+      return false;
+    }
   }
 
   /// Generic instant notification
-  Future<void> showInstantNotification({
+  Future<bool> showInstantNotification({
     required String title,
     required String body,
     String? payload,
   }) async {
-    await showAccountabilityAlert(title: title, body: body, payload: payload);
+    return await showAccountabilityAlert(title: title, body: body, payload: payload);
   }
 }

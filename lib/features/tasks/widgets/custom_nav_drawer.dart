@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
-
 import '../../diary/pages/diary_history_page.dart';
+import '../../settings/pages/settings_page.dart';
 
 class CustomNavDrawer extends StatelessWidget {
   final VoidCallback? onResetSession;
@@ -74,9 +74,18 @@ class CustomNavDrawer extends StatelessWidget {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.settings_outlined, color: AppColors.mutedText),
-              title: const Text('Settings & Supabase', style: TextStyle(fontSize: 14)),
-              onTap: () => Navigator.pop(context),
+              leading: const Icon(Icons.settings_outlined, color: AppColors.primaryBlue),
+              title: const Text(
+                'Settings',
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: AppColors.titleText),
+              ),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const SettingsPage()),
+                );
+              },
             ),
             const Spacer(),
             Padding(
@@ -93,7 +102,7 @@ class CustomNavDrawer extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                   const Text(
-                    'Desk Summon v1.0.0',
+                    'KaryaFlow v1.0.0',
                     style: TextStyle(fontSize: 12, color: AppColors.mutedText, fontWeight: FontWeight.w600),
                   ),
                 ],
