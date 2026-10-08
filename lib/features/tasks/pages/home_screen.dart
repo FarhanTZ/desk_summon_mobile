@@ -77,6 +77,30 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  IconData _getGreetingIcon() {
+    final hour = DateTime.now().hour;
+    if (hour >= 5 && hour < 12) {
+      return Icons.wb_sunny_rounded;
+    } else if (hour >= 12 && hour < 17) {
+      return Icons.wb_sunny_rounded;
+    } else if (hour >= 17 && hour < 21) {
+      return Icons.wb_twilight_rounded;
+    } else {
+      return Icons.nightlight_round;
+    }
+  }
+
+  Color _getGreetingIconColor() {
+    final hour = DateTime.now().hour;
+    if (hour >= 5 && hour < 17) {
+      return const Color(0xFFF59E0B);
+    } else if (hour >= 17 && hour < 21) {
+      return const Color(0xFFF97316);
+    } else {
+      return const Color(0xFF6366F1);
+    }
+  }
+
   // Filter regular workspace tasks
   List<TaskModel> _filterWorkTaskList(List<TaskModel> tasks) {
     return tasks.where((task) {
@@ -748,14 +772,24 @@ class _HomeScreenState extends State<HomeScreen> {
                       const SizedBox(height: 18),
 
                       // Greeting & Task Count
-                      Text(
-                        '${_getGreeting()}, Farhan',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.mutedText,
-                          letterSpacing: -0.1,
-                        ),
+                      Row(
+                        children: [
+                          Icon(
+                            _getGreetingIcon(),
+                            size: 17,
+                            color: _getGreetingIconColor(),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            '${_getGreeting()}, Farhan',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.mutedText,
+                              letterSpacing: -0.1,
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 4),
 
