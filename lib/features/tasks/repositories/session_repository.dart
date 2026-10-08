@@ -27,10 +27,17 @@ class SessionRepository {
     }).eq('id', 1);
   }
 
-  // Reset or surrender session
-  Future<void> resetSession() async {
+  // Conclude or surrender session (IDLE for done, SURRENDERED for give up)
+  Future<void> resetSession({bool surrender = true}) async {
     await _supabase.from('current_session').update({
-      'state': 'SURRENDERED',
+      'state': surrender ? 'SURRENDERED' : 'IDLE',
+      'updated_at': DateTime.now().toUtc().toIso8601String(),
+    }).eq('id', 1);
+  }
+
+  Future<void> concludeSession({bool surrender = false}) async {
+    await _supabase.from('current_session').update({
+      'state': surrender ? 'SURRENDERED' : 'IDLE',
       'updated_at': DateTime.now().toUtc().toIso8601String(),
     }).eq('id', 1);
   }

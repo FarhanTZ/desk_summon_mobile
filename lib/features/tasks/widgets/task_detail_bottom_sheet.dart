@@ -11,6 +11,7 @@ class TaskDetailBottomSheet extends StatelessWidget {
   final VoidCallback onSummon;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
+  final VoidCallback? onGiveUpSession;
 
   const TaskDetailBottomSheet({
     super.key,
@@ -21,6 +22,7 @@ class TaskDetailBottomSheet extends StatelessWidget {
     required this.onSummon,
     required this.onEdit,
     required this.onDelete,
+    this.onGiveUpSession,
   });
 
   @override
@@ -341,6 +343,35 @@ class TaskDetailBottomSheet extends StatelessWidget {
               ),
             ],
           ),
+
+          // Action 3: End Focus Session (Shown when session callback available)
+          if (onGiveUpSession != null) ...[
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              height: 46,
+              child: OutlinedButton.icon(
+                icon: const Icon(Icons.stop_circle_outlined, color: AppColors.dangerRed, size: 18),
+                label: const Text(
+                  'END FOCUS SESSION',
+                  style: TextStyle(
+                    color: AppColors.dangerRed,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 13,
+                    letterSpacing: 0.3,
+                  ),
+                ),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: AppColors.dangerRedBorder),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                ),
+                onPressed: () {
+                  Navigator.pop(context);
+                  onGiveUpSession!();
+                },
+              ),
+            ),
+          ],
         ],
       ),
     );

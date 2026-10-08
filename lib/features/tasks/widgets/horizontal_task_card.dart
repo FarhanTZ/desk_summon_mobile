@@ -24,7 +24,7 @@ class HorizontalTaskCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap, // Tap seluruh card membuka Bottom Sheet detail
       child: Container(
-        width: 165, // Bentuk Persegi Compact (Square Card)
+        width: 175, // Bentuk Persegi Compact & Responsif
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: isDone ? const Color(0xFF64748B) : colorTheme.solidBg, // Full Solid Color
@@ -41,47 +41,56 @@ class HorizontalTaskCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            // Header: Category Badge (White container with themed text)
+            // Header: Category Badge & Status Icon (Fully Responsive)
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: Colors.white, // Solid White Container
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        task.category,
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w800,
-                          color: isDone ? const Color(0xFF64748B) : colorTheme.solidBg,
-                        ),
-                      ),
-                    ),
-                    if (task.categories.length > 1) ...[
-                      const SizedBox(width: 4),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: Colors.white24,
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          '+${task.categories.length - 1}',
-                          style: const TextStyle(
-                            fontSize: 9,
-                            fontWeight: FontWeight.w800,
-                            color: Colors.white,
+                Expanded(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Flexible(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: Colors.white, // Solid White Container
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            task.category,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                              color: isDone ? const Color(0xFF64748B) : colorTheme.solidBg,
+                            ),
                           ),
                         ),
                       ),
+                      if (task.categories.length > 1) ...[
+                        const SizedBox(width: 4),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: Colors.white24,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            '+${task.categories.length - 1}',
+                            style: const TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
+                const SizedBox(width: 6),
                 if (isDone)
                   const Icon(Icons.check_circle, size: 16, color: Colors.white)
                 else

@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 
 class CustomNavDrawer extends StatelessWidget {
-  final VoidCallback onResetSession;
+  final VoidCallback? onResetSession;
 
-  const CustomNavDrawer({super.key, required this.onResetSession});
+  const CustomNavDrawer({super.key, this.onResetSession});
 
   @override
   Widget build(BuildContext context) {
@@ -69,25 +69,23 @@ class CustomNavDrawer extends StatelessWidget {
             ),
             const Spacer(),
             Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  icon: const Icon(Icons.power_settings_new, color: AppColors.dangerRed, size: 18),
-                  label: const Text(
-                    'Reset Laptop Session',
-                    style: TextStyle(color: AppColors.dangerRed, fontWeight: FontWeight.w600),
+              padding: const EdgeInsets.all(24.0),
+              child: Row(
+                children: [
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF10B981),
+                      shape: BoxShape.circle,
+                    ),
                   ),
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: AppColors.dangerRedBorder),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  const SizedBox(width: 8),
+                  const Text(
+                    'Desk Summon v1.0.0',
+                    style: TextStyle(fontSize: 12, color: AppColors.mutedText, fontWeight: FontWeight.w600),
                   ),
-                  onPressed: () {
-                    Navigator.pop(context);
-                    onResetSession();
-                  },
-                ),
+                ],
               ),
             ),
           ],

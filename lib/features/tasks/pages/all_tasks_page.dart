@@ -90,6 +90,10 @@ class _AllTasksPageState extends State<AllTasksPage> {
       } else {
         final nextStatus = task.status == TaskStatus.done ? TaskStatus.todo : TaskStatus.done;
         await _taskRepository.updateTaskStatus(task.id, nextStatus);
+        if (nextStatus == TaskStatus.done) {
+          // Automatically conclude active workspace session on laptop when task is completed
+          await _sessionRepository.concludeSession(surrender: false);
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -97,6 +101,40 @@ class _AllTasksPageState extends State<AllTasksPage> {
           SnackBar(content: Text('Failed to update status: $e'), backgroundColor: AppColors.dangerRed),
         );
       }
+    }
+  }
+
+  Future<void> _giveUpSession({TaskModel? task}) async {
+    setState(() => _isActionLoading = true);
+    try {
+      await _sessionRepository.resetSession(surrender: true);
+      if (task != null && task.status == TaskStatus.inProgress) {
+        await _taskRepository.updateTaskStatus(task.id, TaskStatus.todo);
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Row(
+              children: [
+                Icon(Icons.stop_circle_outlined, color: Colors.white, size: 18),
+                SizedBox(width: 8),
+                Expanded(child: Text('Focus session ended. Take a break and recharge!')),
+              ],
+            ),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: AppColors.titleText,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error ending session: $e'), backgroundColor: AppColors.dangerRed),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isActionLoading = false);
     }
   }
 
@@ -258,6 +296,7 @@ class _AllTasksPageState extends State<AllTasksPage> {
         onSummon: () => _summonTask(task),
         onEdit: () => _editTask(task),
         onDelete: () => _deleteTask(task),
+        onGiveUpSession: () => _giveUpSession(task: task),
       ),
     );
   }

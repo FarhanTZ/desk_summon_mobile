@@ -6,12 +6,14 @@ class HabitProgressDashboardCard extends StatelessWidget {
   final List<HabitModel> habits;
   final Stream<List<Map<String, dynamic>>>? sessionStream;
   final VoidCallback? onTap;
+  final Function(Map<String, dynamic>)? onTapSession;
 
   const HabitProgressDashboardCard({
     super.key,
     required this.habits,
     this.sessionStream,
     this.onTap,
+    this.onTapSession,
   });
 
   HabitModel? _getNextUpcomingHabit() {
@@ -297,75 +299,82 @@ class HabitProgressDashboardCard extends StatelessWidget {
                       ? const Color(0xFF34D399)
                       : (isSurrendered ? const Color(0xFFFBBF24) : Colors.white60);
 
-                  return Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7.5),
-                    decoration: BoxDecoration(
-                      color: pillBg,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                        color: isFocusing
-                            ? const Color(0xFF34D399).withValues(alpha: 0.4)
-                            : Colors.white.withValues(alpha: 0.12),
+                  return GestureDetector(
+                    onTap: () {
+                      if (onTapSession != null && data != null && data.isNotEmpty) {
+                        onTapSession!(data.first);
+                      }
+                    },
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7.5),
+                      decoration: BoxDecoration(
+                        color: pillBg,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: isFocusing
+                              ? const Color(0xFF34D399).withValues(alpha: 0.4)
+                              : Colors.white.withValues(alpha: 0.12),
+                        ),
                       ),
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 8,
-                          height: 8,
-                          decoration: BoxDecoration(
-                            color: dotColor,
-                            shape: BoxShape.circle,
-                            boxShadow: isFocusing
-                                ? [
-                                    BoxShadow(
-                                      color: const Color(0xFF34D399).withValues(alpha: 0.6),
-                                      blurRadius: 6,
-                                      spreadRadius: 1,
-                                    )
-                                  ]
-                                : null,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            isFocusing
-                                ? 'LAPTOP ACTIVE: "$topic"'
-                                : (isSurrendered
-                                    ? 'LAPTOP: Session Surrendered'
-                                    : 'LAPTOP ON STANDBY (Ready to summon)'),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: isFocusing ? FontWeight.w800 : FontWeight.w600,
-                              color: isFocusing ? const Color(0xFFECFDF5) : Colors.white70,
-                              letterSpacing: isFocusing ? 0.2 : 0,
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 8,
+                            height: 8,
+                            decoration: BoxDecoration(
+                              color: dotColor,
+                              shape: BoxShape.circle,
+                              boxShadow: isFocusing
+                                  ? [
+                                      BoxShadow(
+                                        color: const Color(0xFF34D399).withValues(alpha: 0.6),
+                                        blurRadius: 6,
+                                        spreadRadius: 1,
+                                      )
+                                    ]
+                                  : null,
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: isFocusing
-                                ? const Color(0xFF059669)
-                                : Colors.white.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            state,
-                            style: const TextStyle(
-                              fontSize: 9,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.white,
-                              letterSpacing: 0.5,
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              isFocusing
+                                  ? 'LAPTOP ACTIVE: "$topic"'
+                                  : (isSurrendered
+                                      ? 'LAPTOP: Focus Session Ended'
+                                      : 'LAPTOP ON STANDBY (Ready to summon)'),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: isFocusing ? FontWeight.w800 : FontWeight.w600,
+                                color: isFocusing ? const Color(0xFFECFDF5) : Colors.white70,
+                                letterSpacing: isFocusing ? 0.2 : 0,
+                              ),
                             ),
                           ),
-                        ),
-                      ],
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: isFocusing
+                                  ? const Color(0xFF059669)
+                                  : Colors.white.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              state,
+                              style: const TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   );
                 },

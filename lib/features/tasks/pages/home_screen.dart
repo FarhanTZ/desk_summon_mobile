@@ -128,6 +128,10 @@ class _HomeScreenState extends State<HomeScreen> {
     final nextStatus = task.status == TaskStatus.done ? TaskStatus.todo : TaskStatus.done;
     try {
       await _taskRepository.updateTaskStatus(task.id, nextStatus);
+      if (nextStatus == TaskStatus.done) {
+        // Automatically conclude active workspace session on laptop when task is completed
+        await _sessionRepository.concludeSession(surrender: false);
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -189,16 +193,25 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Future<void> _resetSession() async {
+  Future<void> _giveUpSession({TaskModel? task}) async {
     setState(() => _isLoading = true);
     try {
-      await _sessionRepository.resetSession();
+      await _sessionRepository.resetSession(surrender: true);
+      if (task != null && task.status == TaskStatus.inProgress) {
+        await _taskRepository.updateTaskStatus(task.id, TaskStatus.todo);
+      }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Session concluded. Rest without guilt!'),
+            content: const Row(
+              children: [
+                Icon(Icons.stop_circle_outlined, color: Colors.white, size: 18),
+                SizedBox(width: 8),
+                Expanded(child: Text('Focus session ended. Take a break and recharge!')),
+              ],
+            ),
             behavior: SnackBarBehavior.floating,
-            backgroundColor: AppColors.mutedText,
+            backgroundColor: AppColors.titleText,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
         );
@@ -206,12 +219,159 @@ class _HomeScreenState extends State<HomeScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: AppColors.dangerRed),
+          SnackBar(content: Text('Error ending session: $e'), backgroundColor: AppColors.dangerRed),
         );
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  void _showSessionControlSheet(Map<String, dynamic> sessionData) {
+    final state = sessionData['state'] ?? 'IDLE';
+    final topic = sessionData['topic'] ?? '-';
+    final isFocusing = state == 'FOCUSING';
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.fromLTRB(24, 14, 24, 32),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 44,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFCBD5E1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+            ),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: isFocusing
+                        ? const Color(0xFF059669).withValues(alpha: 0.12)
+                        : AppColors.primaryBlue.withValues(alpha: 0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    isFocusing ? Icons.laptop_chromebook_rounded : Icons.power_settings_new_rounded,
+                    color: isFocusing ? const Color(0xFF059669) : AppColors.primaryBlue,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        isFocusing ? 'Active Laptop Focus' : 'Laptop Workspace Session',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.titleText,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        isFocusing ? 'Focusing on: "$topic"' : 'Current State: $state',
+                        style: const TextStyle(fontSize: 12, color: AppColors.mutedText),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 22),
+            if (isFocusing) ...[
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: ElevatedButton.icon(
+                  icon: const Icon(Icons.check_circle_outline, size: 20),
+                  label: const Text(
+                    'COMPLETE FOCUS SESSION',
+                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF059669),
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                  onPressed: () async {
+                    Navigator.pop(ctx);
+                    await _sessionRepository.concludeSession(surrender: false);
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Session completed successfully! Great job! 🎉'),
+                          backgroundColor: Color(0xFF059669),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    }
+                  },
+                ),
+              ),
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: OutlinedButton.icon(
+                  icon: const Icon(Icons.stop_circle_outlined, color: AppColors.dangerRed, size: 18),
+                  label: const Text(
+                    'END FOCUS SESSION',
+                    style: TextStyle(color: AppColors.dangerRed, fontWeight: FontWeight.w800, fontSize: 13),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: AppColors.dangerRedBorder),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                  onPressed: () async {
+                    Navigator.pop(ctx);
+                    await _giveUpSession();
+                  },
+                ),
+              ),
+            ] else ...[
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: OutlinedButton.icon(
+                  icon: const Icon(Icons.refresh_rounded, color: AppColors.primaryBlue, size: 18),
+                  label: const Text(
+                    'RESET STANDBY STATE',
+                    style: TextStyle(color: AppColors.primaryBlue, fontWeight: FontWeight.w800, fontSize: 13),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: Color(0xFF93C5FD)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                  onPressed: () async {
+                    Navigator.pop(ctx);
+                    await _sessionRepository.concludeSession(surrender: false);
+                  },
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
   }
 
   void _openTaskFormPage({TaskModel? taskToEdit}) {
@@ -282,6 +442,7 @@ class _HomeScreenState extends State<HomeScreen> {
         onSummon: () => _summonTask(task),
         onEdit: () => _openTaskFormPage(taskToEdit: task),
         onDelete: () => _deleteTask(task),
+        onGiveUpSession: () => _giveUpSession(task: task),
       ),
     );
   }
@@ -453,7 +614,7 @@ class _HomeScreenState extends State<HomeScreen> {
             return Scaffold(
               key: _scaffoldKey,
               backgroundColor: AppColors.background,
-              drawer: CustomNavDrawer(onResetSession: _resetSession),
+              drawer: const CustomNavDrawer(),
               floatingActionButton: FloatingActionButton(
                 onPressed: _showAddOptionsSheet,
                 backgroundColor: AppColors.primaryBlue,
@@ -538,6 +699,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         habits: filteredHabits,
                         sessionStream: _sessionRepository.getSessionStream(),
                         onTap: () => _navigateToAllTasks(habits, allTasks),
+                        onTapSession: _showSessionControlSheet,
                       ),
 
                       const SizedBox(height: 20),
@@ -736,7 +898,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         )
                       else
                         SizedBox(
-                          height: 150,
+                          height: 156,
                           child: ListView.separated(
                             scrollDirection: Axis.horizontal,
                             itemCount: filteredWorkTasks.length,
