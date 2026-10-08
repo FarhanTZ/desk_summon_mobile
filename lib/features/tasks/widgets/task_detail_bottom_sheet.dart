@@ -5,6 +5,7 @@ import '../models/task_model.dart';
 
 class TaskDetailBottomSheet extends StatelessWidget {
   final TaskModel task;
+  final DateTime? selectedDate;
   final bool isLoading;
   final VoidCallback onToggleStatus;
   final VoidCallback onSummon;
@@ -14,6 +15,7 @@ class TaskDetailBottomSheet extends StatelessWidget {
   const TaskDetailBottomSheet({
     super.key,
     required this.task,
+    this.selectedDate,
     required this.isLoading,
     required this.onToggleStatus,
     required this.onSummon,
@@ -23,7 +25,7 @@ class TaskDetailBottomSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDone = task.status == TaskStatus.done;
+    final isDone = task.isCompletedOn(selectedDate);
 
     return Container(
       padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),

@@ -281,67 +281,14 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // Convert habits into task-like models for AllTasksPage unified timeline
-  List<TaskModel> _buildUnifiedTaskList(List<HabitModel> habits, List<TaskModel> tasks) {
-    final List<TaskModel> unified = [];
-
-    // 1. Add all daily habits as Parent TaskModels
-    for (final h in habits) {
-      unified.add(
-        TaskModel(
-          id: h.id,
-          habitId: h.id,
-          title: h.title,
-          category: h.category,
-          categories: [h.category],
-          openVSCode: false,
-          startTime: h.startTime,
-          endTime: h.endTime,
-          scheduledDate: null, // Indicates daily recurring
-          parentHabit: h,
-        ),
-      );
-    }
-
-    // 2. Add all workspace tasks (standalone or child)
-    for (final t in tasks) {
-      unified.add(t);
-    }
-
-    return unified;
-  }
-
   void _navigateToAllTasks(List<HabitModel> currentHabits, List<TaskModel> currentTasks) {
-    final unified = _buildUnifiedTaskList(currentHabits, currentTasks);
-
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => AllTasksPage(
-          tasks: unified,
-          isLoading: _isLoading,
-          onToggleStatus: (task) {
-            if (task.parentHabit != null) {
-              _toggleHabitStatus(task.parentHabit!);
-            } else {
-              _toggleTaskStatus(task);
-            }
-          },
-          onSummon: (task) => _summonTask(task),
-          onEdit: (task) {
-            if (task.parentHabit != null) {
-              _openHabitFormPage(habitToEdit: task.parentHabit);
-            } else {
-              _openTaskFormPage(taskToEdit: task);
-            }
-          },
-          onDelete: (task) {
-            if (task.parentHabit != null) {
-              _deleteHabit(task.parentHabit!);
-            } else {
-              _deleteTask(task);
-            }
-          },
+          habitRepository: _habitRepository,
+          taskRepository: _taskRepository,
+          sessionRepository: _sessionRepository,
           onAttachChild: (parentHabitTask) {
             _openTaskFormPage(
               taskToEdit: TaskModel(
@@ -356,6 +303,8 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             );
           },
+          onEditHabit: (habit) => _openHabitFormPage(habitToEdit: habit),
+          onEditTask: (task) => _openTaskFormPage(taskToEdit: task),
         ),
       ),
     );

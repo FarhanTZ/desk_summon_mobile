@@ -5,6 +5,7 @@ import '../models/task_model.dart';
 
 class TaskCardItem extends StatelessWidget {
   final TaskModel task;
+  final DateTime? selectedDate;
   final bool isLoading;
   final VoidCallback onTap;
   final VoidCallback onSummon;
@@ -19,6 +20,7 @@ class TaskCardItem extends StatelessWidget {
   const TaskCardItem({
     super.key,
     required this.task,
+    this.selectedDate,
     required this.isLoading,
     required this.onTap,
     required this.onSummon,
@@ -32,7 +34,8 @@ class TaskCardItem extends StatelessWidget {
   });
 
   bool _isTaskActiveNow() {
-    if (task.status == TaskStatus.done || task.startTime == null) return false;
+    final isDone = task.isCompletedOn(selectedDate);
+    if (isDone || task.startTime == null) return false;
     final now = DateTime.now();
     final taskDate = task.scheduledDate ?? now;
     final isToday = now.year == taskDate.year && now.month == taskDate.month && now.day == taskDate.day;
@@ -47,7 +50,7 @@ class TaskCardItem extends StatelessWidget {
 
   // Dynamic tracking subtitle
   String _getTimeTrackingSubtitle() {
-    if (task.status == TaskStatus.done) return 'Completed';
+    if (task.isCompletedOn(selectedDate)) return 'Completed';
     if (task.startTime == null) return 'No Time';
 
     final now = DateTime.now();
@@ -141,7 +144,7 @@ class TaskCardItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDone = task.status == TaskStatus.done;
+    final isDone = task.isCompletedOn(selectedDate);
     final colorTheme = CategoryColorTheme.fromCategory(task.category);
     final isActive = _isTaskActiveNow();
     final childTask = task.todayChildTask;
@@ -176,31 +179,6 @@ class TaskCardItem extends StatelessWidget {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        if (task.isDaily) ...[
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF059669),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: const Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.repeat_rounded, size: 11, color: Colors.white),
-                                SizedBox(width: 3),
-                                Text(
-                                  'Daily Habit',
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w800,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 5),
-                        ],
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
