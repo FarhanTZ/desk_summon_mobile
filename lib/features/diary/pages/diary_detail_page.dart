@@ -106,31 +106,23 @@ class _DiaryDetailPageState extends State<DiaryDetailPage> {
   }
 
   Widget _buildHeroHeader(DiaryModel diary) {
-    final isGaveUp = diary.gaveUp;
-
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
+        gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: isGaveUp
-              ? const [
-                  Color(0xFF991B1B), // Red 800
-                  Color(0xFFDC2626), // Red 600
-                  Color(0xFFEF4444), // Red 500
-                ]
-              : const [
-                  Color(0xFF1E3A8A), // Navy 900
-                  Color(0xFF1D4ED8), // Royal Blue 700
-                  Color(0xFF2563EB), // Vibrant Blue 600
-                ],
+          colors: [
+            Color(0xFF1E3A8A), // Navy 900
+            Color(0xFF1D4ED8), // Royal Blue 700
+            Color(0xFF2563EB), // Vibrant Blue 600
+          ],
         ),
         borderRadius: BorderRadius.circular(22),
         boxShadow: [
           BoxShadow(
-            color: (isGaveUp ? const Color(0xFFDC2626) : const Color(0xFF1D4ED8)).withValues(alpha: 0.32),
+            color: const Color(0xFF1D4ED8).withValues(alpha: 0.32),
             blurRadius: 16,
             offset: const Offset(0, 6),
           )
@@ -175,12 +167,12 @@ class _DiaryDetailPageState extends State<DiaryDetailPage> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
                 decoration: BoxDecoration(
-                  color: isGaveUp ? const Color(0xFF7F1D1D) : const Color(0xFF047857),
+                  color: const Color(0xFF047857),
                   borderRadius: BorderRadius.circular(6),
                 ),
-                child: Text(
-                  isGaveUp ? 'GAVE UP' : 'EVALUATED',
-                  style: const TextStyle(
+                child: const Text(
+                  'EVALUATED',
+                  style: TextStyle(
                     color: Colors.white,
                     fontSize: 9.5,
                     fontWeight: FontWeight.w800,
@@ -212,14 +204,21 @@ class _DiaryDetailPageState extends State<DiaryDetailPage> {
               _buildTopMetricPill(
                 icon: Icons.check_circle_outline,
                 value: '${diary.completedSessions}',
-                label: 'Sessions',
+                label: 'Tuntas',
               ),
               const SizedBox(width: 8),
-              _buildTopMetricPill(
-                icon: Icons.warning_amber_rounded,
-                value: '${diary.distractionCount}',
-                label: 'Missed Habits',
-              ),
+              if (diary.gaveUp)
+                _buildTopMetricPill(
+                  icon: Icons.flag_outlined,
+                  value: 'Ada',
+                  label: 'Menyerah',
+                )
+              else
+                _buildTopMetricPill(
+                  icon: Icons.warning_amber_rounded,
+                  value: '${diary.distractionCount}',
+                  label: 'Habit Lewat',
+                ),
             ],
           ),
         ],
