@@ -8,8 +8,8 @@ import '../repositories/task_repository.dart';
 import '../widgets/circular_filter_card.dart';
 import '../widgets/custom_nav_drawer.dart';
 import '../widgets/daily_habits_section.dart';
+import '../widgets/habit_progress_dashboard_card.dart';
 import '../widgets/horizontal_task_card.dart';
-import '../widgets/laptop_status_card.dart';
 import '../widgets/task_detail_bottom_sheet.dart';
 import 'all_tasks_page.dart';
 import 'habit_form_page.dart';
@@ -531,7 +531,16 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
 
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 18),
+
+                      // Hero Habit Progress & Live Laptop Dashboard Card
+                      HabitProgressDashboardCard(
+                        habits: filteredHabits,
+                        sessionStream: _sessionRepository.getSessionStream(),
+                        onTap: () => _navigateToAllTasks(habits, allTasks),
+                      ),
+
+                      const SizedBox(height: 20),
 
                       // Search Bar
                       Container(
@@ -617,13 +626,6 @@ class _HomeScreenState extends State<HomeScreen> {
                         onToggleStatus: _toggleHabitStatus,
                         onEdit: (habit) => _openHabitFormPage(habitToEdit: habit),
                         onAddDaily: () => _openHabitFormPage(),
-                      ),
-
-                      const SizedBox(height: 24),
-
-                      // Laptop Status Realtime Card
-                      LaptopStatusCard(
-                        sessionStream: _sessionRepository.getSessionStream(),
                       ),
 
                       const SizedBox(height: 24),
