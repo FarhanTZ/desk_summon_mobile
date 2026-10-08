@@ -108,8 +108,44 @@ class TaskCardItem extends StatelessWidget {
                       decoration: isDone ? TextDecoration.lineThrough : null,
                     ),
                   ),
+                  if (task.formattedDate != null || task.formattedTimeRange != null) ...[
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        if (task.formattedDate != null) ...[
+                          Icon(Icons.calendar_today_rounded, size: 11, color: isDone ? Colors.white54 : Colors.white70),
+                          const SizedBox(width: 4),
+                          Text(
+                            task.formattedDate!,
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: isDone ? Colors.white54 : Colors.white70,
+                            ),
+                          ),
+                        ],
+                        if (task.formattedDate != null && task.formattedTimeRange != null) ...[
+                          const SizedBox(width: 8),
+                          Text('•', style: TextStyle(color: isDone ? Colors.white54 : Colors.white70, fontSize: 11)),
+                          const SizedBox(width: 8),
+                        ],
+                        if (task.formattedTimeRange != null) ...[
+                          Icon(Icons.schedule_rounded, size: 11, color: isDone ? Colors.white54 : Colors.white70),
+                          const SizedBox(width: 4),
+                          Text(
+                            task.formattedTimeRange!,
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: isDone ? Colors.white54 : Colors.white70,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ],
                   if (task.url.isNotEmpty) ...[
-                    const SizedBox(height: 3),
+                    const SizedBox(height: 4),
                     Text(
                       task.url,
                       maxLines: 1,

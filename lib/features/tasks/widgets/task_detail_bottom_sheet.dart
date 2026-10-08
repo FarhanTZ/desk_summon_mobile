@@ -119,6 +119,42 @@ class TaskDetailBottomSheet extends StatelessWidget {
             ),
           ),
 
+          // Schedule Information Card (Muncul jika tanggal atau jam disetel)
+          if (task.formattedDate != null || task.formattedTimeRange != null) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: const Color(0xFF2563EB).withValues(alpha: 0.07),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFF2563EB).withValues(alpha: 0.2)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.event_available_rounded, size: 18, color: Color(0xFF2563EB)),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (task.formattedDate != null)
+                          Text(
+                            task.formattedDate!,
+                            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF1E3A8A)),
+                          ),
+                        if (task.formattedTimeRange != null)
+                          Text(
+                            'Estimated: ${task.formattedTimeRange!}',
+                            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF3B82F6)),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+
           const SizedBox(height: 16),
 
           // Workspace Environment Information (URL & VS Code)

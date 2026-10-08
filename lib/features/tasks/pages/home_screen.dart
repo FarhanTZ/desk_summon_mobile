@@ -35,6 +35,9 @@ class _HomeScreenState extends State<HomeScreen> {
       category: 'Development',
       url: 'https://github.com/FarhanTZ/desk-summon-backend',
       openVSCode: true,
+      scheduledDate: DateTime.now(),
+      startTime: const TimeOfDay(hour: 9, minute: 0),
+      endTime: const TimeOfDay(hour: 11, minute: 30),
       status: TaskStatus.inProgress,
     ),
     TaskModel(
@@ -43,6 +46,9 @@ class _HomeScreenState extends State<HomeScreen> {
       category: 'AI & Research',
       url: 'https://chatgpt.com',
       openVSCode: false,
+      scheduledDate: DateTime.now(),
+      startTime: const TimeOfDay(hour: 13, minute: 0),
+      endTime: const TimeOfDay(hour: 14, minute: 30),
       status: TaskStatus.todo,
     ),
     TaskModel(
@@ -51,6 +57,9 @@ class _HomeScreenState extends State<HomeScreen> {
       category: 'Writing & Journal',
       url: 'https://docs.google.com',
       openVSCode: false,
+      scheduledDate: DateTime.now(),
+      startTime: const TimeOfDay(hour: 20, minute: 0),
+      endTime: const TimeOfDay(hour: 20, minute: 45),
       status: TaskStatus.done,
     ),
     TaskModel(
@@ -59,6 +68,9 @@ class _HomeScreenState extends State<HomeScreen> {
       category: 'Chill & Ambient',
       url: 'https://www.youtube.com/results?search_query=lofi+study+music',
       openVSCode: false,
+      scheduledDate: DateTime.now().add(const Duration(days: 1)),
+      startTime: const TimeOfDay(hour: 15, minute: 0),
+      endTime: const TimeOfDay(hour: 16, minute: 0),
       status: TaskStatus.todo,
     ),
   ];

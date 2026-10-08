@@ -89,18 +89,44 @@ class HorizontalTaskCard extends StatelessWidget {
               ],
             ),
 
-            // Content: Title
-            Text(
-              task.title,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-                color: isDone ? Colors.white60 : Colors.white,
-                decoration: isDone ? TextDecoration.lineThrough : null,
-                height: 1.25,
-              ),
+            // Content: Title & Schedule
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  task.title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: isDone ? Colors.white60 : Colors.white,
+                    decoration: isDone ? TextDecoration.lineThrough : null,
+                    height: 1.25,
+                  ),
+                ),
+                if (task.formattedTimeRange != null || task.formattedDate != null) ...[
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(Icons.schedule_rounded, size: 10, color: isDone ? Colors.white54 : Colors.white70),
+                      const SizedBox(width: 3),
+                      Expanded(
+                        child: Text(
+                          task.formattedTimeRange ?? task.formattedDate!,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: isDone ? Colors.white54 : Colors.white70,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
             ),
 
             // Footer: Action Button (White solid button on colorful card)

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../../../core/constants/app_colors.dart';
 import '../models/task_model.dart';
 
@@ -25,6 +26,11 @@ class _TaskFormPageState extends State<TaskFormPage> {
   late bool _openVSCode;
   bool _useTrello = true;
   bool _useNotion = false;
+
+  // Schedule (Date & Time) State
+  DateTime? _selectedDate;
+  TimeOfDay? _startTime;
+  TimeOfDay? _endTime;
 
   final Map<String, Map<String, dynamic>> _categoryPresets = {
     'Development': {
@@ -86,6 +92,11 @@ class _TaskFormPageState extends State<TaskFormPage> {
         : [];
     _openVSCode = task?.openVSCode ?? false;
 
+    // Schedule state initialization
+    _selectedDate = task?.scheduledDate ?? DateTime.now();
+    _startTime = task?.startTime;
+    _endTime = task?.endTime;
+
     // Detect if task was already using trello / notion
     if (initialUrls.contains('trello.com')) _useTrello = true;
     if (initialUrls.contains('notion.so')) _useNotion = true;
@@ -131,6 +142,75 @@ class _TaskFormPageState extends State<TaskFormPage> {
     });
   }
 
+  Future<void> _pickDate() async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate ?? now,
+      firstDate: DateTime(now.year - 1),
+      lastDate: DateTime(now.year + 2),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: AppColors.primaryBlue,
+              onPrimary: Colors.white,
+              onSurface: AppColors.titleText,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null) {
+      setState(() => _selectedDate = picked);
+    }
+  }
+
+  Future<void> _pickStartTime() async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: _startTime ?? TimeOfDay.now(),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: AppColors.primaryBlue,
+              onPrimary: Colors.white,
+              onSurface: AppColors.titleText,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null) {
+      setState(() => _startTime = picked);
+    }
+  }
+
+  Future<void> _pickEndTime() async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: _endTime ?? (_startTime ?? TimeOfDay.now()),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: AppColors.primaryBlue,
+              onPrimary: Colors.white,
+              onSurface: AppColors.titleText,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null) {
+      setState(() => _endTime = picked);
+    }
+  }
+
   void _saveTask() {
     final title = _titleController.text.trim();
     if (title.isEmpty) {
@@ -155,6 +235,9 @@ class _TaskFormPageState extends State<TaskFormPage> {
       categories: _selectedCategories,
       urls: cleanUrls,
       openVSCode: _openVSCode,
+      scheduledDate: _selectedDate,
+      startTime: _startTime,
+      endTime: _endTime,
       status: widget.taskToEdit?.status ?? TaskStatus.todo,
     );
 
@@ -255,9 +338,147 @@ class _TaskFormPageState extends State<TaskFormPage> {
                 ),
               ),
 
+              const SizedBox(height: 20),
+
+              // Section 2: Schedule (Date & Time)
+              const Text(
+                'SCHEDULE & TIME ESTIMATION',
+                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.mutedText, letterSpacing: 1.1),
+              ),
+              const SizedBox(height: 10),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: Column(
+                  children: [
+                    // Date Picker Row
+                    InkWell(
+                      onTap: _pickDate,
+                      borderRadius: BorderRadius.circular(10),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: AppColors.primaryBlue.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: const Icon(Icons.calendar_today_rounded, size: 18, color: AppColors.primaryBlue),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Scheduled Date',
+                                    style: TextStyle(fontSize: 11, color: AppColors.mutedText, fontWeight: FontWeight.w600),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    _selectedDate != null
+                                        ? DateFormat('EEEE, d MMMM yyyy').format(_selectedDate!)
+                                        : 'Set a date for this task',
+                                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.titleText),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppColors.placeholderText),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const Divider(height: 20, color: AppColors.border),
+                    // Time Range Row (Start Time & End Time)
+                    Row(
+                      children: [
+                        // Start Time
+                        Expanded(
+                          child: InkWell(
+                            onTap: _pickStartTime,
+                            borderRadius: BorderRadius.circular(10),
+                            child: Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: AppColors.background,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: AppColors.border),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.schedule_rounded, size: 16, color: AppColors.primaryBlue),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        const Text('Start Time', style: TextStyle(fontSize: 10, color: AppColors.mutedText, fontWeight: FontWeight.w600)),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          _startTime != null ? TaskModel.formatTime(_startTime!) : '--:--',
+                                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.titleText),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        const Icon(Icons.arrow_forward_rounded, size: 14, color: AppColors.placeholderText),
+                        const SizedBox(width: 10),
+                        // End Time
+                        Expanded(
+                          child: InkWell(
+                            onTap: _pickEndTime,
+                            borderRadius: BorderRadius.circular(10),
+                            child: Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: AppColors.background,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: AppColors.border),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.flag_rounded, size: 16, color: Color(0xFF059669)),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        const Text('End Time', style: TextStyle(fontSize: 10, color: AppColors.mutedText, fontWeight: FontWeight.w600)),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          _endTime != null ? TaskModel.formatTime(_endTime!) : '--:--',
+                                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.titleText),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
               const SizedBox(height: 24),
 
-              // Section 2: Workspace Category Selector (Multi-Select)
+              // Section 3: Workspace Category Selector (Multi-Select)
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
