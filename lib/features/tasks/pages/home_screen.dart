@@ -821,7 +821,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
 
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 20),
 
                       // 3 Concentric Circular Filter Cards
                       Row(
@@ -871,72 +871,42 @@ class _HomeScreenState extends State<HomeScreen> {
 
                       const SizedBox(height: 24),
 
-                      // Section: Daily Habits & Routine
-                      RepaintBoundary(
-                        child: DailyHabitsSection(
-                          habits: filteredHabits,
-                          onToggleStatus: _toggleHabitStatus,
-                          onEdit: (habit) => _openHabitFormPage(habitToEdit: habit),
-                          onTapHabit: _openHabitDetailSheet,
-                          onAddDaily: () => _openHabitFormPage(),
-                        ),
-                      ),
-
-                      const SizedBox(height: 24),
-
-                      // Workspace Tasks Header with + Add and See All
+                      // Workspace Tasks Header with Icon and See All
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text(
-                            'Work & Workspace Tasks',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.titleText,
-                              letterSpacing: -0.3,
-                            ),
-                          ),
                           Row(
                             children: [
-                              GestureDetector(
-                                onTap: () => _openTaskFormPage(),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.primaryBlue.withValues(alpha: 0.12),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: const Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(Icons.add_rounded, size: 14, color: AppColors.primaryBlue),
-                                      SizedBox(width: 2),
-                                      Text(
-                                        'Add',
-                                        style: TextStyle(
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.w800,
-                                          color: AppColors.primaryBlue,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
+                              Container(
+                                padding: const EdgeInsets.all(6),
+                                decoration: BoxDecoration(
+                                  color: AppColors.primaryBlue.withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(8),
                                 ),
+                                child: const Icon(Icons.laptop_chromebook_rounded, size: 16, color: AppColors.primaryBlue),
                               ),
-                              const SizedBox(width: 10),
-                              GestureDetector(
-                                onTap: () => _navigateToAllTasks(habits, allTasks),
-                                child: const Text(
-                                  'See All',
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.primaryBlue,
-                                  ),
+                              const SizedBox(width: 8),
+                              const Text(
+                                'Workspace Tasks',
+                                style: TextStyle(
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.titleText,
+                                  letterSpacing: -0.3,
                                 ),
                               ),
                             ],
+                          ),
+                          GestureDetector(
+                            onTap: () => _navigateToAllTasks(habits, allTasks),
+                            child: const Text(
+                              'See All',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.primaryBlue,
+                              ),
+                            ),
                           ),
                         ],
                       ),
@@ -1006,6 +976,20 @@ class _HomeScreenState extends State<HomeScreen> {
                             },
                           ),
                         ),
+
+                      const SizedBox(height: 28),
+
+                      // Section: Daily Habits & Routine
+                      RepaintBoundary(
+                        child: DailyHabitsSection(
+                          habits: filteredHabits,
+                          onToggleStatus: _toggleHabitStatus,
+                          onEdit: (habit) => _openHabitFormPage(habitToEdit: habit),
+                          onTapHabit: _openHabitDetailSheet,
+                          onAddDaily: () => _openHabitFormPage(),
+                          onSeeAll: () => _navigateToAllTasks(habits, allTasks),
+                        ),
+                      ),
 
                       const SizedBox(height: 70),
                     ],

@@ -3,12 +3,13 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/category_colors.dart';
 import '../models/habit_model.dart';
 
-class DailyHabitsSection extends StatelessWidget {
+class DailyHabitsSection extends StatefulWidget {
   final List<HabitModel> habits;
   final Function(HabitModel) onToggleStatus;
   final Function(HabitModel) onEdit;
   final Function(HabitModel)? onTapHabit;
   final VoidCallback onAddDaily;
+  final VoidCallback? onSeeAll;
 
   const DailyHabitsSection({
     super.key,
@@ -17,12 +18,48 @@ class DailyHabitsSection extends StatelessWidget {
     required this.onEdit,
     this.onTapHabit,
     required this.onAddDaily,
+    this.onSeeAll,
   });
 
   @override
+  State<DailyHabitsSection> createState() => _DailyHabitsSectionState();
+}
+
+class _DailyHabitsSectionState extends State<DailyHabitsSection> {
+  bool _isExpanded = false;
+  static const int _compactLimit = 4;
+
+  List<HabitModel> _getSortedDisplayHabits() {
+    // Separate uncompleted and completed
+    final uncompleted = widget.habits.where((h) => !h.isCompletedOn()).toList();
+    final completed = widget.habits.where((h) => h.isCompletedOn()).toList();
+
+    // Sort uncompleted by closest to now
+    uncompleted.sort((a, b) {
+      final aMin = a.startTime != null ? (a.startTime!.hour * 60 + a.startTime!.minute) : 9999;
+      final bMin = b.startTime != null ? (b.startTime!.hour * 60 + b.startTime!.minute) : 9999;
+      return aMin.compareTo(bMin);
+    });
+
+    completed.sort((a, b) {
+      final aMin = a.startTime != null ? (a.startTime!.hour * 60 + a.startTime!.minute) : 9999;
+      final bMin = b.startTime != null ? (b.startTime!.hour * 60 + b.startTime!.minute) : 9999;
+      return aMin.compareTo(bMin);
+    });
+
+    final sorted = [...uncompleted, ...completed];
+
+    if (!_isExpanded && sorted.length > _compactLimit) {
+      return sorted.take(_compactLimit).toList();
+    }
+    return sorted;
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final totalDaily = habits.length;
-    final completedCount = habits.where((h) => h.isCompletedOn()).length;
+    final totalDaily = widget.habits.length;
+    final displayHabits = _getSortedDisplayHabits();
+    final hasMore = totalDaily > _compactLimit;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -53,61 +90,34 @@ class DailyHabitsSection extends StatelessWidget {
                 ),
               ],
             ),
-            Row(
-              children: [
-                if (totalDaily > 0)
-                  Text(
-                    '$completedCount/$totalDaily Done',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF059669),
-                    ),
-                  ),
-                const SizedBox(width: 8),
-                GestureDetector(
-                  onTap: onAddDaily,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF059669).withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.add_rounded, size: 14, color: Color(0xFF059669)),
-                        SizedBox(width: 2),
-                        Text(
-                          'Add',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w800,
-                            color: Color(0xFF059669),
-                          ),
-                        ),
-                      ],
-                    ),
+            if (widget.onSeeAll != null)
+              GestureDetector(
+                onTap: widget.onSeeAll,
+                child: const Text(
+                  'See All',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF059669),
                   ),
                 ),
-              ],
-            ),
+              ),
           ],
         ),
 
         const SizedBox(height: 12),
 
         // If no daily tasks yet, show an inviting quick add banner
-        if (habits.isEmpty)
+        if (widget.habits.isEmpty)
           GestureDetector(
-            onTap: onAddDaily,
+            onTap: widget.onAddDaily,
             child: Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppColors.surface,
+                color: const Color(0xFFECFDF5),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.border),
+                border: Border.all(color: const Color(0xFFA7F3D0)),
               ),
               child: Row(
                 children: [
@@ -126,12 +136,12 @@ class DailyHabitsSection extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Set up your daily habits',
+                          'Atur rutinitas harian Anda',
                           style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.titleText),
                         ),
                         SizedBox(height: 2),
                         Text(
-                          'Wake up, workout, clean room, read books...',
+                          'Bangun tidur, olahraga, belajar, review kerja...',
                           style: TextStyle(fontSize: 11, color: AppColors.mutedText),
                         ),
                       ],
@@ -150,12 +160,58 @@ class DailyHabitsSection extends StatelessWidget {
                 color: AppColors.surface,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: AppColors.border),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x060F172A),
+                    blurRadius: 8,
+                    offset: Offset(0, 2),
+                  )
+                ],
               ),
               child: Column(
                 children: [
-                  for (int i = 0; i < habits.length; i++) ...[
+                  for (int i = 0; i < displayHabits.length; i++) ...[
                     if (i > 0) const Divider(height: 14, color: AppColors.border),
-                    _buildHabitItem(habits[i]),
+                    _buildHabitItem(displayHabits[i]),
+                  ],
+
+                  // Expand / Collapse Bottom Button
+                  if (hasMore) ...[
+                    const Divider(height: 16, color: AppColors.border),
+                    InkWell(
+                      onTap: () {
+                        setState(() {
+                          _isExpanded = !_isExpanded;
+                        });
+                      },
+                      borderRadius: BorderRadius.circular(8),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 6),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              _isExpanded
+                                  ? 'Tampilkan Ringkas'
+                                  : 'Lihat Semua ($totalDaily Rutinitas)',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w800,
+                                color: Color(0xFF059669),
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Icon(
+                              _isExpanded
+                                  ? Icons.keyboard_arrow_up_rounded
+                                  : Icons.keyboard_arrow_down_rounded,
+                              size: 18,
+                              color: const Color(0xFF059669),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ],
                 ],
               ),
@@ -172,10 +228,10 @@ class DailyHabitsSection extends StatelessWidget {
 
     return InkWell(
       onTap: () {
-        if (onTapHabit != null) {
-          onTapHabit!(habit);
+        if (widget.onTapHabit != null) {
+          widget.onTapHabit!(habit);
         } else {
-          onEdit(habit);
+          widget.onEdit(habit);
         }
       },
       borderRadius: BorderRadius.circular(10),
@@ -185,7 +241,7 @@ class DailyHabitsSection extends StatelessWidget {
           children: [
             // Custom Animated Checkbox
             GestureDetector(
-              onTap: () => onToggleStatus(habit),
+              onTap: () => widget.onToggleStatus(habit),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 180),
                 width: 24,
