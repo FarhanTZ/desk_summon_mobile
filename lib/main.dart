@@ -42,7 +42,7 @@ class DeskSummonApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Desk Summon',
+      title: 'KaryaFlow',
       debugShowCheckedModeBanner: false,
       scrollBehavior: const SmoothScrollBehavior(),
       theme: ThemeData(
