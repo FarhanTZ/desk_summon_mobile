@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'core/constants/app_colors.dart';
+import 'core/services/notification_service.dart';
 import 'core/services/supabase_service.dart';
 import 'features/tasks/pages/home_screen.dart';
 
@@ -19,6 +20,15 @@ Future<void> main() async {
     await SupabaseService.init();
   } catch (e) {
     debugPrint("Warning: Could not initialize Supabase: $e");
+  }
+
+  // 3. Initialize Notification Service & Channels
+  try {
+    final notifService = NotificationService();
+    await notifService.init();
+    await notifService.requestPermissions();
+  } catch (e) {
+    debugPrint("Warning: Could not initialize NotificationService: $e");
   }
 
   runApp(const DeskSummonApp());

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/services/notification_service.dart';
 import '../../../core/widgets/custom_error_view.dart';
 import '../models/habit_model.dart';
 import '../models/task_model.dart';
@@ -29,6 +30,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final SessionRepository _sessionRepository = SessionRepository();
   final TaskRepository _taskRepository = TaskRepository();
   final HabitRepository _habitRepository = HabitRepository();
+  final NotificationService _notificationService = NotificationService();
   bool _isLoading = false;
 
   late Stream<List<HabitModel>> _habitsStream;
@@ -221,6 +223,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _deleteHabit(HabitModel habit) async {
     try {
       await _habitRepository.deleteHabit(habit.id);
+      await _notificationService.cancelHabitReminder(habit.id);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -245,6 +248,10 @@ class _HomeScreenState extends State<HomeScreen> {
       if (task != null && task.status == TaskStatus.inProgress) {
         await _taskRepository.updateTaskStatus(task.id, TaskStatus.todo);
       }
+      await _notificationService.showAccountabilityAlert(
+        title: 'Sesi Fokus Dihentikan',
+        body: 'Sesi fokus telah diakhiri. Ambil jeda istirahat sejenak untuk memulihkan energi.',
+      );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -674,6 +681,7 @@ class _HomeScreenState extends State<HomeScreen> {
       builder: (context, habitSnapshot) {
         if (habitSnapshot.hasData) {
           _habits = habitSnapshot.data!;
+          _notificationService.syncAllHabitReminders(_habits, minutesBefore: 10);
         }
 
         return StreamBuilder<List<TaskModel>>(
