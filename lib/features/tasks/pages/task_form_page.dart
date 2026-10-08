@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../core/constants/app_colors.dart';
 import '../models/task_model.dart';
+import '../widgets/custom_date_picker_bottom_sheet.dart';
+import '../widgets/custom_time_picker_bottom_sheet.dart';
 
 class TaskFormPage extends StatefulWidget {
   final TaskModel? taskToEdit;
@@ -143,24 +145,9 @@ class _TaskFormPageState extends State<TaskFormPage> {
   }
 
   Future<void> _pickDate() async {
-    final now = DateTime.now();
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _selectedDate ?? now,
-      firstDate: DateTime(now.year - 1),
-      lastDate: DateTime(now.year + 2),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: AppColors.primaryBlue,
-              onPrimary: Colors.white,
-              onSurface: AppColors.titleText,
-            ),
-          ),
-          child: child!,
-        );
-      },
+    final picked = await CustomDatePickerBottomSheet.show(
+      context,
+      initialDate: _selectedDate ?? DateTime.now(),
     );
     if (picked != null) {
       setState(() => _selectedDate = picked);
@@ -168,21 +155,10 @@ class _TaskFormPageState extends State<TaskFormPage> {
   }
 
   Future<void> _pickStartTime() async {
-    final picked = await showTimePicker(
-      context: context,
+    final picked = await CustomTimePickerBottomSheet.show(
+      context,
       initialTime: _startTime ?? TimeOfDay.now(),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: AppColors.primaryBlue,
-              onPrimary: Colors.white,
-              onSurface: AppColors.titleText,
-            ),
-          ),
-          child: child!,
-        );
-      },
+      title: 'Select Start Time',
     );
     if (picked != null) {
       setState(() => _startTime = picked);
@@ -190,21 +166,10 @@ class _TaskFormPageState extends State<TaskFormPage> {
   }
 
   Future<void> _pickEndTime() async {
-    final picked = await showTimePicker(
-      context: context,
+    final picked = await CustomTimePickerBottomSheet.show(
+      context,
       initialTime: _endTime ?? (_startTime ?? TimeOfDay.now()),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: AppColors.primaryBlue,
-              onPrimary: Colors.white,
-              onSurface: AppColors.titleText,
-            ),
-          ),
-          child: child!,
-        );
-      },
+      title: 'Select End Time',
     );
     if (picked != null) {
       setState(() => _endTime = picked);

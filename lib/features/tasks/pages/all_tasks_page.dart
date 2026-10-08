@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../models/task_model.dart';
+import '../widgets/custom_date_picker_bottom_sheet.dart';
+import '../widgets/horizontal_date_scroller.dart';
 import '../widgets/task_card_item.dart';
 import '../widgets/task_detail_bottom_sheet.dart';
 
@@ -30,6 +32,8 @@ class _AllTasksPageState extends State<AllTasksPage> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   String _selectedFilter = 'all';
+  DateTime? _selectedDate = DateTime.now(); // Default to today, or null for all dates
+  bool _filterByDate = true;
 
   @override
   void dispose() {
@@ -61,13 +65,30 @@ class _AllTasksPageState extends State<AllTasksPage> {
     );
   }
 
+  bool _isSameDay(DateTime a, DateTime b) {
+    return a.year == b.year && a.month == b.month && a.day == b.day;
+  }
+
   List<TaskModel> get _filteredTasks {
     return widget.tasks.where((task) {
+      // Date filter
+      if (_filterByDate && _selectedDate != null) {
+        if (task.scheduledDate == null) {
+          // If task has no date, only show when filterByDate is off
+          return false;
+        }
+        if (!_isSameDay(task.scheduledDate!, _selectedDate!)) {
+          return false;
+        }
+      }
+
+      // Search Query
       final matchesTitle = task.title.toLowerCase().contains(_searchQuery.toLowerCase());
       final matchesCategories = task.categories.any((c) => c.toLowerCase().contains(_searchQuery.toLowerCase()));
       final matchesSearch = matchesTitle || matchesCategories;
       if (!matchesSearch) return false;
 
+      // Status Filter
       if (_selectedFilter == 'todo') return task.status == TaskStatus.todo;
       if (_selectedFilter == 'inProgress') return task.status == TaskStatus.inProgress;
       if (_selectedFilter == 'done') return task.status == TaskStatus.done;
@@ -94,10 +115,32 @@ class _AllTasksPageState extends State<AllTasksPage> {
             fontWeight: FontWeight.w800,
           ),
         ),
+        actions: [
+          IconButton(
+            icon: Icon(
+              Icons.calendar_month_rounded,
+              color: _filterByDate ? AppColors.primaryBlue : AppColors.mutedText,
+              size: 22,
+            ),
+            tooltip: 'Choose Full Calendar Date',
+            onPressed: () async {
+              final picked = await CustomDatePickerBottomSheet.show(
+                context,
+                initialDate: _selectedDate ?? DateTime.now(),
+              );
+              if (picked != null) {
+                setState(() {
+                  _selectedDate = picked;
+                  _filterByDate = true;
+                });
+              }
+            },
+          ),
+        ],
       ),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 8.0),
+          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 4.0),
           child: Column(
             children: [
               // Search Bar
@@ -123,41 +166,64 @@ class _AllTasksPageState extends State<AllTasksPage> {
 
               const SizedBox(height: 14),
 
-              // Filter Chips
+              // Horizontal Swipeable Date & Month & Year Scroller
+              if (_selectedDate != null)
+                HorizontalDateScroller(
+                  selectedDate: _selectedDate!,
+                  onDateSelected: (newDate) {
+                    setState(() {
+                      _selectedDate = newDate;
+                      _filterByDate = true;
+                    });
+                  },
+                ),
+
+              const SizedBox(height: 14),
+
+              // Status Filter Chips (All, To Do, In Progress, Done)
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: Row(
                   children: [
-                    _buildChip('all', 'All (${widget.tasks.length})'),
+                    _buildChip('all', 'All Status'),
                     const SizedBox(width: 8),
-                    _buildChip('todo', 'To Do (${widget.tasks.where((t) => t.status == TaskStatus.todo).length})'),
+                    _buildChip('todo', 'To Do'),
                     const SizedBox(width: 8),
-                    _buildChip('inProgress', 'In Progress (${widget.tasks.where((t) => t.status == TaskStatus.inProgress).length})'),
+                    _buildChip('inProgress', 'In Progress'),
                     const SizedBox(width: 8),
-                    _buildChip('done', 'Done (${widget.tasks.where((t) => t.status == TaskStatus.done).length})'),
+                    _buildChip('done', 'Done'),
                   ],
                 ),
               ),
 
               const SizedBox(height: 16),
 
-              // Vertical Full List
+              // Vertical Full List with Timeline & Time Tracking
               Expanded(
                 child: _filteredTasks.isEmpty
-                    ? const Center(
-                        child: Text(
-                          'No tasks found',
-                          style: TextStyle(color: AppColors.mutedText, fontSize: 14),
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.event_note_outlined, size: 48, color: AppColors.placeholderText),
+                            const SizedBox(height: 12),
+                            const Text(
+                              'No tasks found for this date',
+                              style: TextStyle(color: AppColors.mutedText, fontSize: 14, fontWeight: FontWeight.w600),
+                            ),
+                          ],
                         ),
                       )
-                    : ListView.separated(
+                    : ListView.builder(
                         itemCount: _filteredTasks.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 12),
                         itemBuilder: (context, index) {
                           final task = _filteredTasks[index];
                           return TaskCardItem(
                             task: task,
                             isLoading: widget.isLoading,
+                            showTimeline: true,
+                            isFirst: index == 0,
+                            isLast: index == _filteredTasks.length - 1,
                             onTap: () => _openTaskDetailSheet(task),
                             onSummon: () => widget.onSummon(task),
                           );
