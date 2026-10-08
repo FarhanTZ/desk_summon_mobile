@@ -56,19 +56,83 @@ class TaskModel {
     return '$hour:$minute';
   }
 
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
+  static TimeOfDay? parseTime(String? timeStr) {
+    if (timeStr == null || !timeStr.contains(':')) return null;
+    try {
+      final parts = timeStr.split(':');
+      final hour = int.parse(parts[0].trim());
+      final minute = int.parse(parts[1].trim());
+      return TimeOfDay(hour: hour, minute: minute);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static TaskStatus parseStatus(String? statusStr) {
+    if (statusStr == null) return TaskStatus.todo;
+    switch (statusStr.toLowerCase()) {
+      case 'inprogress':
+      case 'in_progress':
+        return TaskStatus.inProgress;
+      case 'done':
+      case 'completed':
+        return TaskStatus.done;
+      default:
+        return TaskStatus.todo;
+    }
+  }
+
+  factory TaskModel.fromJson(Map<String, dynamic> json) {
+    List<String> parsedCategories = [];
+    if (json['categories'] != null) {
+      parsedCategories = List<String>.from(json['categories']);
+    } else if (json['category'] != null) {
+      parsedCategories = [json['category'].toString()];
+    }
+
+    List<String> parsedUrls = [];
+    if (json['urls'] != null) {
+      parsedUrls = List<String>.from(json['urls']);
+    } else if (json['doc_url'] != null) {
+      parsedUrls = json['doc_url'].toString().split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+    } else if (json['url'] != null) {
+      parsedUrls = [json['url'].toString()];
+    }
+
+    DateTime? parsedDate;
+    if (json['scheduled_date'] != null) {
+      parsedDate = DateTime.tryParse(json['scheduled_date'].toString());
+    }
+
+    return TaskModel(
+      id: json['id']?.toString() ?? '',
+      title: json['title']?.toString() ?? '',
+      categories: parsedCategories,
+      urls: parsedUrls,
+      openVSCode: json['open_vscode'] == true,
+      scheduledDate: parsedDate,
+      startTime: parseTime(json['start_time']?.toString()),
+      endTime: parseTime(json['end_time']?.toString()),
+      status: parseStatus(json['status']?.toString()),
+    );
+  }
+
+  Map<String, dynamic> toJson({bool includeId = true}) {
+    final map = <String, dynamic>{
       'title': title,
       'categories': categories,
-      'category': category,
       'urls': urls,
-      'url': url,
       'open_vscode': openVSCode,
-      'scheduled_date': scheduledDate?.toIso8601String(),
-      'start_time': startTime != null ? '${startTime!.hour}:${startTime!.minute}' : null,
-      'end_time': endTime != null ? '${endTime!.hour}:${endTime!.minute}' : null,
+      'scheduled_date': scheduledDate != null ? DateFormat('yyyy-MM-dd').format(scheduledDate!) : null,
+      'start_time': startTime != null ? '${startTime!.hour.toString().padLeft(2, '0')}:${startTime!.minute.toString().padLeft(2, '0')}' : null,
+      'end_time': endTime != null ? '${endTime!.hour.toString().padLeft(2, '0')}:${endTime!.minute.toString().padLeft(2, '0')}' : null,
       'status': status.name,
+      'updated_at': DateTime.now().toUtc().toIso8601String(),
     };
+    if (includeId && id.isNotEmpty && !id.contains(RegExp(r'^[0-9]+$'))) {
+      // If it's a valid UUID, include it
+      map['id'] = id;
+    }
+    return map;
   }
 }
