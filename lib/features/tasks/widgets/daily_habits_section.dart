@@ -7,6 +7,7 @@ class DailyHabitsSection extends StatelessWidget {
   final List<HabitModel> habits;
   final Function(HabitModel) onToggleStatus;
   final Function(HabitModel) onEdit;
+  final Function(HabitModel)? onTapHabit;
   final VoidCallback onAddDaily;
 
   const DailyHabitsSection({
@@ -14,6 +15,7 @@ class DailyHabitsSection extends StatelessWidget {
     required this.habits,
     required this.onToggleStatus,
     required this.onEdit,
+    this.onTapHabit,
     required this.onAddDaily,
   });
 
@@ -169,7 +171,13 @@ class DailyHabitsSection extends StatelessWidget {
     final catIcon = CategoryColorTheme.getCategoryIcon(habit.category);
 
     return InkWell(
-      onTap: () => onEdit(habit),
+      onTap: () {
+        if (onTapHabit != null) {
+          onTapHabit!(habit);
+        } else {
+          onEdit(habit);
+        }
+      },
       borderRadius: BorderRadius.circular(10),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 4),

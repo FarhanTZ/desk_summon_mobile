@@ -468,6 +468,35 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  void _openHabitDetailSheet(HabitModel habit) {
+    final taskRepresentation = TaskModel(
+      id: habit.id,
+      title: habit.title,
+      categories: [habit.category],
+      startTime: habit.startTime,
+      endTime: habit.endTime,
+      openVSCode: false,
+      scheduledDate: null,
+      parentHabit: habit,
+      status: habit.isCompletedOn() ? TaskStatus.done : TaskStatus.todo,
+    );
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => TaskDetailBottomSheet(
+        task: taskRepresentation,
+        isLoading: _isLoading,
+        onToggleStatus: () => _toggleHabitStatus(habit),
+        onSummon: () => _summonTask(taskRepresentation),
+        onEdit: () => _openHabitFormPage(habitToEdit: habit),
+        onDelete: () => _deleteHabit(habit),
+        onGiveUpSession: () => _giveUpSession(task: taskRepresentation),
+      ),
+    );
+  }
+
   void _navigateToAllTasks(List<HabitModel> currentHabits, List<TaskModel> currentTasks) {
     Navigator.push(
       context,
@@ -848,6 +877,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           habits: filteredHabits,
                           onToggleStatus: _toggleHabitStatus,
                           onEdit: (habit) => _openHabitFormPage(habitToEdit: habit),
+                          onTapHabit: _openHabitDetailSheet,
                           onAddDaily: () => _openHabitFormPage(),
                         ),
                       ),

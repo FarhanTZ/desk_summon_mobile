@@ -28,6 +28,7 @@ class TaskDetailBottomSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDone = task.isCompletedOn(selectedDate);
+    final isHabit = task.isDaily || task.parentHabit != null;
 
     return Container(
       padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
@@ -159,28 +160,48 @@ class TaskDetailBottomSheet extends StatelessWidget {
             ),
           ],
 
-          const SizedBox(height: 16),
-
-          // Workspace Environment Information (URL & VS Code)
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: AppColors.background,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: AppColors.border),
-            ),
-            child: Column(
-              children: [
-                if (task.urls.isNotEmpty) ...[
-                  ...task.urls.map((u) => Padding(
-                    padding: const EdgeInsets.only(bottom: 6.0),
-                    child: Row(
+          // Workspace Environment Information (Only for Workspace Tasks)
+          if (!isHabit) ...[
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: AppColors.background,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Column(
+                children: [
+                  if (task.urls.isNotEmpty) ...[
+                    ...task.urls.map((u) => Padding(
+                      padding: const EdgeInsets.only(bottom: 6.0),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.link_rounded, size: 18, color: AppColors.primaryBlue),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              u,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.primaryBlue,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    )),
+                  ] else if (task.url.isNotEmpty) ...[
+                    Row(
                       children: [
                         const Icon(Icons.link_rounded, size: 18, color: AppColors.primaryBlue),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            u,
+                            task.url,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
@@ -192,91 +213,73 @@ class TaskDetailBottomSheet extends StatelessWidget {
                         ),
                       ],
                     ),
-                  )),
-                ] else if (task.url.isNotEmpty) ...[
-                  Row(
-                    children: [
-                      const Icon(Icons.link_rounded, size: 18, color: AppColors.primaryBlue),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          task.url,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                  ] else ...[
+                    const Row(
+                      children: [
+                        Icon(Icons.link_off_rounded, size: 18, color: AppColors.mutedText),
+                        SizedBox(width: 8),
+                        Text(
+                          'No browser links attached',
+                          style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
-                            color: AppColors.primaryBlue,
+                            color: AppColors.placeholderText,
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                ] else ...[
-                  const Row(
-                    children: [
-                      Icon(Icons.link_off_rounded, size: 18, color: AppColors.mutedText),
-                      SizedBox(width: 8),
-                      Text(
-                        'No browser links attached',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.placeholderText,
+                      ],
+                    ),
+                  ],
+                  if (task.openVSCode) ...[
+                    const Divider(height: 16, color: AppColors.border),
+                    const Row(
+                      children: [
+                        Icon(Icons.code_rounded, size: 18, color: AppColors.mutedText),
+                        SizedBox(width: 8),
+                        Text(
+                          'Will launch VS Code on Laptop',
+                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.bodyText),
                         ),
-                      ),
-                    ],
-                  ),
+                      ],
+                    ),
+                  ],
                 ],
-                if (task.openVSCode) ...[
-                  const Divider(height: 16, color: AppColors.border),
-                  const Row(
-                    children: [
-                      Icon(Icons.code_rounded, size: 18, color: AppColors.mutedText),
-                      SizedBox(width: 8),
-                      Text(
-                        'Will launch VS Code on Laptop',
-                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.bodyText),
-                      ),
-                    ],
-                  ),
-                ],
-              ],
+              ),
             ),
-          ),
+          ],
 
           const SizedBox(height: 20),
 
-          // Action 1: ⚡ Summon Desk (Primary Full Width Blue Button)
-          SizedBox(
-            width: double.infinity,
-            height: 50,
-            child: ElevatedButton(
-              onPressed: isLoading
-                  ? null
-                  : () {
-                      Navigator.pop(context);
-                      onSummon();
-                    },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primaryBlue,
-                foregroundColor: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-              ),
-              child: const Text(
-                'SUMMON WORKSPACE',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, letterSpacing: 0.5),
+          // Action 1: Summon Desk (Only for Workspace Tasks)
+          if (!isHabit) ...[
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton(
+                onPressed: isLoading
+                    ? null
+                    : () {
+                        Navigator.pop(context);
+                        onSummon();
+                      },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primaryBlue,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                ),
+                child: const Text(
+                  'SUMMON WORKSPACE',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, letterSpacing: 0.5),
+                ),
               ),
             ),
-          ),
+            const SizedBox(height: 12),
+          ],
 
-          const SizedBox(height: 12),
-
-          // Action 2: Complete Button (Full Solid Green) + Edit Icon Button + Delete Icon Button (Full Solid Red)
+          // Action 2: Complete Button + Edit Icon Button + Delete Icon Button
           Row(
             children: [
-              // Complete Button (Full Solid Green)
+              // Complete Button
               Expanded(
                 child: SizedBox(
                   height: 48,
@@ -286,7 +289,7 @@ class TaskDetailBottomSheet extends StatelessWidget {
                       onToggleStatus();
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: isDone ? const Color(0xFF64748B) : const Color(0xFF059669), // Full Solid Green
+                      backgroundColor: isDone ? const Color(0xFF64748B) : const Color(0xFF059669),
                       foregroundColor: Colors.white,
                       elevation: 0,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
@@ -304,7 +307,7 @@ class TaskDetailBottomSheet extends StatelessWidget {
               ),
               const SizedBox(width: 8),
 
-              // Edit Icon Button (Square Pill)
+              // Edit Icon Button
               Container(
                 height: 48,
                 width: 48,
@@ -315,7 +318,7 @@ class TaskDetailBottomSheet extends StatelessWidget {
                 ),
                 child: IconButton(
                   icon: const Icon(Icons.edit_outlined, size: 20, color: AppColors.titleText),
-                  tooltip: 'Edit Task',
+                  tooltip: isHabit ? 'Edit Routine' : 'Edit Task',
                   onPressed: () {
                     Navigator.pop(context);
                     onEdit();
@@ -324,17 +327,17 @@ class TaskDetailBottomSheet extends StatelessWidget {
               ),
               const SizedBox(width: 8),
 
-              // Delete Icon Button (Full Solid Red)
+              // Delete Icon Button
               Container(
                 height: 48,
                 width: 48,
                 decoration: BoxDecoration(
-                  color: AppColors.dangerRed, // Full Solid Red
+                  color: AppColors.dangerRed,
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: IconButton(
                   icon: const Icon(Icons.delete_outline, size: 20, color: Colors.white),
-                  tooltip: 'Delete Task',
+                  tooltip: isHabit ? 'Delete Routine' : 'Delete Task',
                   onPressed: () {
                     Navigator.pop(context);
                     onDelete();
@@ -344,8 +347,8 @@ class TaskDetailBottomSheet extends StatelessWidget {
             ],
           ),
 
-          // Action 3: End Focus Session (Shown when session callback available)
-          if (onGiveUpSession != null) ...[
+          // Action 3: End Focus Session (Only for Workspace Tasks when active)
+          if (!isHabit && onGiveUpSession != null) ...[
             const SizedBox(height: 12),
             SizedBox(
               width: double.infinity,
