@@ -42,12 +42,12 @@ class HabitProgressDashboardCard extends StatelessWidget {
   }
 
   String _getMotivationText(double progress, int completed, int total) {
-    if (total == 0) return 'Set up your daily routines to get started! ✨';
-    if (progress >= 1.0) return 'All routines completed! You are unstoppable 👑';
-    if (progress >= 0.8) return 'Almost there! Finish strong today 🚀';
-    if (progress >= 0.5) return 'Over halfway done, keep the momentum! 💪';
-    if (progress > 0) return 'Good start! Keep moving forward ⚡';
-    return 'Ready to kickstart your day? Let\'s go! 🌅';
+    if (total == 0) return 'Atur rutinitas harian untuk memulai hari.';
+    if (progress >= 1.0) return 'Semua rutinitas selesai. Performa luar biasa!';
+    if (progress >= 0.8) return 'Hampir selesai. Tuntaskan target hari ini.';
+    if (progress >= 0.5) return 'Lebih dari separuh selesai, jaga momentum.';
+    if (progress > 0) return 'Awal yang baik, terus lanjutkan.';
+    return 'Siap memulai hari dengan produktif?';
   }
 
   @override

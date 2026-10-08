@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/widgets/custom_error_view.dart';
 import '../models/habit_model.dart';
 import '../models/task_model.dart';
 import '../repositories/habit_repository.dart';
@@ -54,6 +55,11 @@ class _AllTasksPageState extends State<AllTasksPage> {
   late final TaskRepository _taskRepository;
   late final SessionRepository _sessionRepository;
 
+  late Stream<List<HabitModel>> _habitsStream;
+  late Stream<List<TaskModel>> _tasksStream;
+  List<HabitModel> _cachedHabits = [];
+  List<TaskModel> _cachedTasks = [];
+
   String _searchQuery = '';
   String _selectedFilter = 'all';
   DateTime? _selectedDate = DateTime.now(); // Default to today
@@ -66,6 +72,18 @@ class _AllTasksPageState extends State<AllTasksPage> {
     _habitRepository = widget.habitRepository ?? HabitRepository();
     _taskRepository = widget.taskRepository ?? TaskRepository();
     _sessionRepository = widget.sessionRepository ?? SessionRepository();
+    _initStreams();
+  }
+
+  void _initStreams() {
+    _habitsStream = _habitRepository.getHabitsStream();
+    _tasksStream = _taskRepository.getTasksStream();
+  }
+
+  void _refresh() {
+    setState(() {
+      _initStreams();
+    });
   }
 
   @override
@@ -527,15 +545,54 @@ class _AllTasksPageState extends State<AllTasksPage> {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<List<HabitModel>>(
-      stream: _habitRepository.getHabitsStream(),
+      stream: _habitsStream,
       builder: (context, habitSnapshot) {
+        if (habitSnapshot.hasData) {
+          _cachedHabits = habitSnapshot.data!;
+        }
+
         return StreamBuilder<List<TaskModel>>(
-          stream: _taskRepository.getTasksStream(),
+          stream: _tasksStream,
           builder: (context, taskSnapshot) {
-            final habits = habitSnapshot.data ?? [];
-            final tasks = taskSnapshot.data ?? [];
+            if (taskSnapshot.hasData) {
+              _cachedTasks = taskSnapshot.data!;
+            }
+
+            final habits = _cachedHabits;
+            final tasks = _cachedTasks;
             final unifiedTasks = _buildUnifiedTaskList(habits, tasks);
             final filteredTasks = _filterTasks(unifiedTasks);
+
+            final hasError = habitSnapshot.hasError || taskSnapshot.hasError;
+            final dynamic currentError = habitSnapshot.error ?? taskSnapshot.error;
+
+            if (hasError && habits.isEmpty && tasks.isEmpty) {
+              return Scaffold(
+                backgroundColor: AppColors.background,
+                appBar: AppBar(
+                  backgroundColor: AppColors.background,
+                  elevation: 0,
+                  leading: IconButton(
+                    icon: const Icon(Icons.arrow_back_ios_new, color: AppColors.titleText, size: 20),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                  title: const Text(
+                    'All Tasks & Routine',
+                    style: TextStyle(
+                      color: AppColors.titleText,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                body: SafeArea(
+                  child: CustomErrorView(
+                    error: currentError,
+                    onRetry: _refresh,
+                  ),
+                ),
+              );
+            }
 
             return Scaffold(
               backgroundColor: AppColors.background,
@@ -592,6 +649,15 @@ class _AllTasksPageState extends State<AllTasksPage> {
                   padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 4.0),
                   child: Column(
                     children: [
+                      if (hasError) ...[
+                        CustomErrorView(
+                          error: currentError,
+                          isCompact: true,
+                          onRetry: _refresh,
+                        ),
+                        const SizedBox(height: 8),
+                      ],
+
                       // Search Bar
                       Container(
                         decoration: BoxDecoration(

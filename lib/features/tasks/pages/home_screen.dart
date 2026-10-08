@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/widgets/custom_error_view.dart';
 import '../models/habit_model.dart';
 import '../models/task_model.dart';
 import '../repositories/habit_repository.dart';
@@ -30,12 +31,32 @@ class _HomeScreenState extends State<HomeScreen> {
   final HabitRepository _habitRepository = HabitRepository();
   bool _isLoading = false;
 
+  late Stream<List<HabitModel>> _habitsStream;
+  late Stream<List<TaskModel>> _tasksStream;
+
   // Filter: 'all', 'todo', 'inProgress', 'done'
   String _selectedFilter = 'all';
   String _searchQuery = '';
 
   List<TaskModel> _tasks = [];
   List<HabitModel> _habits = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _initStreams();
+  }
+
+  void _initStreams() {
+    _habitsStream = _habitRepository.getHabitsStream();
+    _tasksStream = _taskRepository.getTasksStream();
+  }
+
+  void _refresh() {
+    setState(() {
+      _initStreams();
+    });
+  }
 
   @override
   void dispose() {
@@ -596,20 +617,42 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<List<HabitModel>>(
-      stream: _habitRepository.getHabitsStream(),
+      stream: _habitsStream,
       builder: (context, habitSnapshot) {
-        final habits = habitSnapshot.data ?? _habits;
-        _habits = habits;
+        if (habitSnapshot.hasData) {
+          _habits = habitSnapshot.data!;
+        }
 
         return StreamBuilder<List<TaskModel>>(
-          stream: _taskRepository.getTasksStream(),
+          stream: _tasksStream,
           builder: (context, taskSnapshot) {
-            final allTasks = taskSnapshot.data ?? _tasks;
-            _tasks = allTasks;
+            if (taskSnapshot.hasData) {
+              _tasks = taskSnapshot.data!;
+            }
+
+            final habits = _habits;
+            final allTasks = _tasks;
 
             final totalCount = habits.length + allTasks.length;
             final filteredWorkTasks = _filterWorkTaskList(allTasks);
             final filteredHabits = _filterHabits(habits);
+
+            final hasError = habitSnapshot.hasError || taskSnapshot.hasError;
+            final dynamic currentError = habitSnapshot.error ?? taskSnapshot.error;
+
+            if (hasError && habits.isEmpty && allTasks.isEmpty) {
+              return Scaffold(
+                key: _scaffoldKey,
+                backgroundColor: AppColors.background,
+                drawer: const CustomNavDrawer(),
+                body: SafeArea(
+                  child: CustomErrorView(
+                    error: currentError,
+                    onRetry: _refresh,
+                  ),
+                ),
+              );
+            }
 
             return Scaffold(
               key: _scaffoldKey,
@@ -624,21 +667,36 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: const Icon(Icons.add, size: 26),
               ),
               body: SafeArea(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Top Header Bar
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.menu_rounded, color: AppColors.titleText, size: 28),
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(),
-                            onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+                child: RefreshIndicator(
+                  color: AppColors.primaryBlue,
+                  onRefresh: () async {
+                    _refresh();
+                  },
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+                    padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (hasError) ...[
+                          CustomErrorView(
+                            error: currentError,
+                            isCompact: true,
+                            onRetry: () => setState(() {}),
                           ),
+                          const SizedBox(height: 12),
+                        ],
+
+                        // Top Header Bar
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.menu_rounded, color: AppColors.titleText, size: 28),
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                              onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+                            ),
                           Container(
                             width: 40,
                             height: 40,
@@ -662,7 +720,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
                       // Greeting & Task Count
                       Text(
-                        '${_getGreeting()}, Farhan 👋',
+                        '${_getGreeting()}, Farhan',
                         style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
@@ -695,11 +753,13 @@ class _HomeScreenState extends State<HomeScreen> {
                       const SizedBox(height: 18),
 
                       // Hero Habit Progress & Live Laptop Dashboard Card
-                      HabitProgressDashboardCard(
-                        habits: filteredHabits,
-                        sessionStream: _sessionRepository.getSessionStream(),
-                        onTap: () => _navigateToAllTasks(habits, allTasks),
-                        onTapSession: _showSessionControlSheet,
+                      RepaintBoundary(
+                        child: HabitProgressDashboardCard(
+                          habits: filteredHabits,
+                          sessionStream: _sessionRepository.getSessionStream(),
+                          onTap: () => _navigateToAllTasks(habits, allTasks),
+                          onTapSession: _showSessionControlSheet,
+                        ),
                       ),
 
                       const SizedBox(height: 20),
@@ -783,11 +843,13 @@ class _HomeScreenState extends State<HomeScreen> {
                       const SizedBox(height: 24),
 
                       // Section: Daily Habits & Routine
-                      DailyHabitsSection(
-                        habits: filteredHabits,
-                        onToggleStatus: _toggleHabitStatus,
-                        onEdit: (habit) => _openHabitFormPage(habitToEdit: habit),
-                        onAddDaily: () => _openHabitFormPage(),
+                      RepaintBoundary(
+                        child: DailyHabitsSection(
+                          habits: filteredHabits,
+                          onToggleStatus: _toggleHabitStatus,
+                          onEdit: (habit) => _openHabitFormPage(habitToEdit: habit),
+                          onAddDaily: () => _openHabitFormPage(),
+                        ),
                       ),
 
                       const SizedBox(height: 24),
@@ -920,10 +982,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
               ),
-            );
-          },
-        );
-      },
-    );
-  }
+            ),
+          );
+        },
+      );
+    },
+  );
+}
 }

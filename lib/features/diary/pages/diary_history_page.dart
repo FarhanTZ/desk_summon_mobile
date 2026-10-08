@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/widgets/custom_error_view.dart';
 import '../models/diary_model.dart';
 import '../repositories/diary_repository.dart';
 import 'diary_story_recap_page.dart';
@@ -16,6 +17,8 @@ class DiaryHistoryPage extends StatefulWidget {
 
 class _DiaryHistoryPageState extends State<DiaryHistoryPage> {
   late final DiaryRepository _diaryRepository;
+  late Stream<List<DiaryModel>> _diariesStream;
+  List<DiaryModel> _cachedDiaries = [];
   String _selectedFilter = 'all'; // 'all', 'focus', 'surrender'
   final String _searchQuery = '';
 
@@ -23,6 +26,13 @@ class _DiaryHistoryPageState extends State<DiaryHistoryPage> {
   void initState() {
     super.initState();
     _diaryRepository = widget.diaryRepository ?? DiaryRepository();
+    _diariesStream = _diaryRepository.getDiariesStream();
+  }
+
+  void _refresh() {
+    setState(() {
+      _diariesStream = _diaryRepository.getDiariesStream();
+    });
   }
 
   String _cleanPreview(String markdown) {
@@ -78,18 +88,29 @@ class _DiaryHistoryPageState extends State<DiaryHistoryPage> {
       ),
       body: SafeArea(
         child: StreamBuilder<List<DiaryModel>>(
-          stream: _diaryRepository.getDiariesStream(),
+          stream: _diariesStream,
           builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
+            if (snapshot.hasData) {
+              _cachedDiaries = snapshot.data!;
+            }
+
+            if (snapshot.connectionState == ConnectionState.waiting && _cachedDiaries.isEmpty) {
               return const Center(child: CircularProgressIndicator());
             }
 
-            final allDiaries = snapshot.data ?? [];
+            if (snapshot.hasError && _cachedDiaries.isEmpty) {
+              return CustomErrorView(
+                error: snapshot.error,
+                onRetry: _refresh,
+              );
+            }
+
+            final allDiaries = _cachedDiaries;
             final filteredDiaries = _filterDiaries(allDiaries);
 
             return RefreshIndicator(
               onRefresh: () async {
-                setState(() {});
+                _refresh();
               },
               color: AppColors.primaryBlue,
               child: CustomScrollView(

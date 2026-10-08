@@ -141,101 +141,105 @@ class DailyHabitsSection extends StatelessWidget {
             ),
           )
         else ...[
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.border),
-            ),
-            child: ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: habits.length,
-              separatorBuilder: (_, __) => const Divider(height: 14, color: AppColors.border),
-              itemBuilder: (context, index) {
-                final habit = habits[index];
-                final isDone = habit.isCompletedOn();
-                final catIcon = CategoryColorTheme.getCategoryIcon(habit.category);
-
-                return InkWell(
-                  onTap: () => onEdit(habit),
-                  borderRadius: BorderRadius.circular(10),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4),
-                    child: Row(
-                      children: [
-                        // Custom Animated Checkbox
-                        GestureDetector(
-                          onTap: () => onToggleStatus(habit),
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
-                            width: 24,
-                            height: 24,
-                            decoration: BoxDecoration(
-                              color: isDone ? const Color(0xFF059669) : Colors.transparent,
-                              borderRadius: BorderRadius.circular(7),
-                              border: Border.all(
-                                color: isDone ? const Color(0xFF059669) : AppColors.placeholderText,
-                                width: 1.8,
-                              ),
-                            ),
-                            child: isDone
-                                ? const Icon(Icons.check_rounded, size: 16, color: Colors.white)
-                                : null,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        // Category Icon Pill
-                        Container(
-                          padding: const EdgeInsets.all(6),
-                          decoration: BoxDecoration(
-                            color: AppColors.background,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Icon(catIcon, size: 14, color: AppColors.mutedText),
-                        ),
-                        const SizedBox(width: 10),
-                        // Habit Title & Time
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                habit.title,
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w700,
-                                  color: isDone ? AppColors.mutedText : AppColors.titleText,
-                                  decoration: isDone ? TextDecoration.lineThrough : null,
-                                  decorationColor: AppColors.mutedText,
-                                ),
-                              ),
-                              if (habit.startTime != null) ...[
-                                const SizedBox(height: 2),
-                                Text(
-                                  habit.formattedTimeRange ?? HabitModel.formatTime(habit.startTime!),
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w600,
-                                    color: isDone ? AppColors.placeholderText : const Color(0xFF059669),
-                                  ),
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                        // Edit chevron
-                        const Icon(Icons.chevron_right_rounded, size: 18, color: AppColors.placeholderText),
-                      ],
-                    ),
-                  ),
-                );
-              },
+          RepaintBoundary(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Column(
+                children: [
+                  for (int i = 0; i < habits.length; i++) ...[
+                    if (i > 0) const Divider(height: 14, color: AppColors.border),
+                    _buildHabitItem(habits[i]),
+                  ],
+                ],
+              ),
             ),
           ),
         ],
       ],
+    );
+  }
+
+  Widget _buildHabitItem(HabitModel habit) {
+    final isDone = habit.isCompletedOn();
+    final catIcon = CategoryColorTheme.getCategoryIcon(habit.category);
+
+    return InkWell(
+      onTap: () => onEdit(habit),
+      borderRadius: BorderRadius.circular(10),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          children: [
+            // Custom Animated Checkbox
+            GestureDetector(
+              onTap: () => onToggleStatus(habit),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  color: isDone ? const Color(0xFF059669) : Colors.transparent,
+                  borderRadius: BorderRadius.circular(7),
+                  border: Border.all(
+                    color: isDone ? const Color(0xFF059669) : AppColors.placeholderText,
+                    width: 1.8,
+                  ),
+                ),
+                child: isDone
+                    ? const Icon(Icons.check_rounded, size: 16, color: Colors.white)
+                    : null,
+              ),
+            ),
+            const SizedBox(width: 12),
+            // Category Icon Pill
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: AppColors.background,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(catIcon, size: 14, color: AppColors.mutedText),
+            ),
+            const SizedBox(width: 10),
+            // Habit Title & Time
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    habit.title,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: isDone ? AppColors.mutedText : AppColors.titleText,
+                      decoration: isDone ? TextDecoration.lineThrough : null,
+                      decorationColor: AppColors.mutedText,
+                    ),
+                  ),
+                  if (habit.startTime != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      habit.formattedTimeRange ?? HabitModel.formatTime(habit.startTime!),
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: isDone ? AppColors.placeholderText : const Color(0xFF059669),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            // Edit chevron
+            const Icon(Icons.chevron_right_rounded, size: 18, color: AppColors.placeholderText),
+          ],
+        ),
+      ),
     );
   }
 }
